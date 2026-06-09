@@ -1,0 +1,305 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma/client.js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  STAFF
+  USER
+}
+
+enum VehicleType {
+  MOTORBIKE
+  CAR
+  BICYCLE
+  ELECTRIC_BIKE
+}
+
+enum SlotStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  MAINTENANCE
+  BLOCKED
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  LOST_TICKET
+  OVERDUE
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+enum PaymentMethod {
+  CASH
+  BANKING
+  E_WALLET
+}
+
+enum FeedbackStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+model Session {
+  id            String   @id @default(cuid())
+
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  refreshToken  String   @unique
+
+  deviceName    String?
+  ipAddress     String?
+  userAgent     String?
+
+  expiresAt     DateTime
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model User {
+  id           String  @id @default(cuid())
+  fullName     String
+  email        String  @unique
+  phone        String? @unique
+  passwordHash String
+  avatarUrl    String?
+
+  role Role @default(USER)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sessions      Session[]
+
+  vehicles     Vehicle[]
+  reservations Reservation[]
+  parkingSessions     ParkingSession[]
+  feedbacks    Feedback[]
+}
+
+model Vehicle {
+  id String @id @default(cuid())
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  licensePlate String @unique
+
+  vehicleType VehicleType
+
+  brand String?
+  color String?
+
+  createdAt DateTime @default(now())
+
+  sessions     ParkingSession[]
+  reservations Reservation[]
+}
+
+model ParkingBuilding {
+  id String @id @default(cuid())
+
+  name    String
+  address String
+
+  totalFloors Int
+
+  createdAt DateTime @default(now())
+
+  floors Floor[]
+}
+
+model Floor {
+  id String @id @default(cuid())
+
+  buildingId  String
+  building    ParkingBuilding @relation(fields: [buildingId], references: [id])
+  floorNumber Int
+
+  vehicleType VehicleType
+
+  createdAt DateTime @default(now())
+
+  zones Zone[]
+}
+
+model Zone {
+  id String @id @default(cuid())
+
+  floorId String
+  floor   Floor  @relation(fields: [floorId], references: [id])
+
+  name String
+
+  slots ParkingSlot[]
+}
+
+model ParkingSlot {
+  id String @id @default(cuid())
+
+  zoneId String
+  zone   Zone   @relation(fields: [zoneId], references: [id])
+
+  slotCode String @unique
+
+  vehicleType VehicleType
+
+  status SlotStatus @default(AVAILABLE)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  sessions     ParkingSession[]
+  reservations Reservation[]
+}
+
+model PricingPolicy {
+  id String @id @default(cuid())
+
+  name String
+
+  vehicleType VehicleType
+
+  firstHourFee Decimal @db.Decimal(10, 2)
+
+  extraHourFee Decimal @db.Decimal(10, 2)
+
+  lostTicketFee Decimal @db.Decimal(10, 2)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+}
+
+model Reservation {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  vehicleId String
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+
+  slotId String
+  slot   ParkingSlot @relation(fields: [slotId], references: [id])
+
+  startTime DateTime
+  endTime   DateTime
+
+  status ReservationStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+}
+
+model ParkingSession {
+  id String @id @default(cuid())
+
+  vehicleId String
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  slotId String
+  slot   ParkingSlot @relation(fields: [slotId], references: [id])
+
+  entryTime DateTime
+
+  exitTime DateTime?
+
+  entryGate String?
+
+  exitGate String?
+
+  status SessionStatus @default(ACTIVE)
+
+  totalFee Decimal? @db.Decimal(10, 2)
+
+  note String?
+
+  createdAt DateTime @default(now())
+
+  payment Payment?
+}
+
+model Payment {
+  id String @id @default(cuid())
+
+  sessionId String @unique
+
+  session ParkingSession @relation(fields: [sessionId], references: [id])
+
+  amount Decimal @db.Decimal(10, 2)
+
+  method PaymentMethod
+
+  status PaymentStatus @default(PENDING)
+
+  paidAt DateTime?
+
+  createdAt DateTime @default(now())
+}
+
+model Feedback {
+  id String @id @default(cuid())
+
+  userId String
+
+  user User @relation(fields: [userId], references: [id])
+
+  title String
+
+  content String
+
+  status FeedbackStatus @default(OPEN)
+
+  createdAt DateTime @default(now())
+}
+
+model AllocationHistory {
+  id String @id @default(cuid())
+
+  vehicleType VehicleType
+
+  floorNumber Int
+
+  zoneName String
+
+  occupancyRate Float
+
+  distanceScore Float
+
+  assignedSlotCode String
+
+  parkingDuration Int
+
+  createdAt DateTime @default(now())
+}
