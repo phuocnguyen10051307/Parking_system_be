@@ -21,8 +21,12 @@
       "description": "Authentication endpoints"
     },
     {
-      "name": "Building",
+      "name": "Buildings",
       "description": "Building management endpoints"
+    },
+    {
+      "name": "Users",
+      "description": "User management endpoints"
     }
   ],
   "paths": {
@@ -215,167 +219,259 @@
         }
       }
     },
-     "/v1/admin/buildings": {
-  "get": {
-    "tags": ["Buildings"],
-    "summary": "Get all buildings",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "responses": {
-      "200": {
-        "description": "Buildings retrieved successfully",
-        "content": {
-          "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "data": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Building"
+    "/v1/admin/buildings": {
+      "get": {
+        "tags": ["Buildings"],
+        "summary": "Get all buildings",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Buildings retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Building"
+                      }
+                    }
                   }
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      }
-    }
-  },
-  "post": {
-    "tags": ["Buildings"],
-    "summary": "Create a new building",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "requestBody": {
-      "required": true,
-      "content": {
-        "application/json": {
-          "schema": {
-            "$ref": "#/components/schemas/BuildingRequest"
+      "post": {
+        "tags": ["Buildings"],
+        "summary": "Create a new building",
+        "security": [
+          {
+            "bearerAuth": []
           }
-        }
-      }
-    },
-    "responses": {
-      "201": {
-        "description": "Building created successfully",
-        "content": {
-          "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "message": {
-                  "type": "string",
-                  "example": "Building created successfully"
-                },
-                "data": {
-                  "$ref": "#/components/schemas/Building"
-                }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuildingRequest"
               }
             }
           }
+        },
+        "responses": {
+          "201": {
+            "description": "Building created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Building created successfully"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Building"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+           "403": {
+            "$ref": "#/components/responses/Forbidden"
+           }
+
+        }
+      }
+    },
+
+    "/v1/admin/buildings/{id}": {
+      "put": {
+        "tags": ["Buildings"],
+        "summary": "Update a building",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmc8h2x3z0000abc123xyz"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuildingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Building updated successfully"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+            "403": {
+              "$ref": "#/components/responses/Forbidden"
+            },  
+          "404": {
+            "description": "Building not found"
+          }
         }
       },
-      "400": {
-        "$ref": "#/components/responses/BadRequest"
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      }
-    }
-  }
-},
-
-"/v1/admin/buildings/{id}": {
-  "put": {
-    "tags": ["Buildings"],
-    "summary": "Update a building",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        },
-        "example": "cmc8h2x3z0000abc123xyz"
-      }
-    ],
-    "requestBody": {
-      "required": true,
-      "content": {
-        "application/json": {
-          "schema": {
-            "$ref": "#/components/schemas/BuildingRequest"
+      "delete": {
+        "tags": ["Buildings"],
+        "summary": "Delete a building",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmc8h2x3z0000abc123xyz"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Building deleted successfully"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+            "403": {
+              "$ref": "#/components/responses/Forbidden"
+            },
+          "404": {
+            "description": "Building not found"
           }
         }
       }
     },
-    "responses": {
-      "200": {
-        "description": "Building updated successfully"
+    "/v1/users/profile": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get current user profile",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current user profile"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
       },
-      "400": {
-        "$ref": "#/components/responses/BadRequest"
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      },
-      "404": {
-        "description": "Building not found"
-      }
-    }
-  },
-  "delete": {
-    "tags": ["Buildings"],
-    "summary": "Delete a building",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
+      "put": {
+        "tags": ["Users"],
+        "summary": "Update current user profile",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileRequest"
+              }
+            }
+          }
         },
-        "example": "cmc8h2x3z0000abc123xyz"
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
       }
-    ],
-    "responses": {
-      "200": {
-        "description": "Building deleted successfully"
-      },
-      "400": {
-        "$ref": "#/components/responses/BadRequest"
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      },
-      "404": {
-        "description": "Building not found"
+    },
+
+    "/v1/users/change-password": {
+      "put": {
+        "tags": ["Users"],
+        "summary": "Change current user password",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password changed successfully"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
       }
     }
-  }
-}
   },
 
   "components": {
@@ -410,11 +506,7 @@
             "example": "Password123"
           }
         },
-        "required": [
-          "fullName",
-          "email",
-          "password"
-        ]
+        "required": ["fullName", "email", "password"]
       },
 
       "SigninRequest": {
@@ -430,10 +522,7 @@
             "example": "Password123"
           }
         },
-        "required": [
-          "email",
-          "password"
-        ]
+        "required": ["email", "password"]
       },
 
       "User": {
@@ -503,64 +592,92 @@
         }
       },
       "BuildingRequest": {
-  "type": "object",
-  "properties": {
-    "name": {
-      "type": "string",
-      "example": "Building A"
-    },
-    "address": {
-      "type": "string",
-      "example": "FPT University HCM"
-    },
-    "totalFloors": {
-      "type": "integer",
-      "example": 5
-    }
-  },
-  "required": [
-    "name",
-    "address",
-    "totalFloors"
-  ]
-},
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Building A"
+          },
+          "address": {
+            "type": "string",
+            "example": "FPT University HCM"
+          },
+          "totalFloors": {
+            "type": "integer",
+            "example": 5
+          }
+        },
+        "required": ["name", "address", "totalFloors"]
+      },
 
-"Building": {
-  "type": "object",
-  "properties": {
-    "id": {
-      "type": "string",
-      "example": "cmc8h2x3z0000abc123xyz"
-    },
-    "name": {
-      "type": "string",
-      "example": "Building A"
-    },
-    "address": {
-      "type": "string",
-      "example": "FPT University HCM"
-    },
-    "totalFloors": {
-      "type": "integer",
-      "example": 5
-    },
-    "createdAt": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "_count": {
-      "type": "object",
-      "properties": {
-        "floors": {
-          "type": "integer",
-          "example": 3
+      "Building": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "cmc8h2x3z0000abc123xyz"
+          },
+          "name": {
+            "type": "string",
+            "example": "Building A"
+          },
+          "address": {
+            "type": "string",
+            "example": "FPT University HCM"
+          },
+          "totalFloors": {
+            "type": "integer",
+            "example": 5
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "_count": {
+            "type": "object",
+            "properties": {
+              "floors": {
+                "type": "integer",
+                "example": 3
+              }
+            }
+          }
         }
+      },
+      "UpdateProfileRequest": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "example": "Tran Minh Quan"
+          },
+          "phone": {
+            "type": "string",
+            "example": "0987654321"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://example.com/avatar.jpg"
+          }
+        }
+      },
+
+      "ChangePasswordRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "example": "Password123"
+          },
+          "newPassword": {
+            "type": "string",
+            "example": "NewPassword123"
+          }
+        },
+        "required": ["currentPassword", "newPassword"]
       }
-    }
-  }
-}
     },
-    
 
     "responses": {
       "BadRequest": {
@@ -609,8 +726,6 @@
         "in": "cookie",
         "name": "refreshToken"
       }
-
     }
-    
   }
 }

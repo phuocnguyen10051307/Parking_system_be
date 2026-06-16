@@ -9,17 +9,20 @@ const signup = asyncHandler(async (req, res) => {
 })
 
 const signin = asyncHandler(async (req, res) => {
-  console.log('BE received signin body:', req.body)
   const { accessToken, refreshToken, refreshTokenMaxAge, user } = await authService.signin(req.body)
+
   res.cookie('refreshToken', refreshToken, {
     ...refreshTokenCookieOptions,
     maxAge: refreshTokenMaxAge,
   })
-  console.log('BE signin user:', user)
 
   res.status(StatusCodes.OK).json({
-    message: `User ${user.fullName} signed in successfully`,
-    accessToken,
+    success: true,
+    message: 'Đăng nhập thành công',
+    data: {
+      user,
+      accessToken,
+    },
   })
 })
 
@@ -29,7 +32,7 @@ const signout = asyncHandler(async (req, res) => {
   res.clearCookie('refreshToken', {
     ...refreshTokenCookieOptions,
   })
-  res.status(StatusCodes.OK).json({ message: 'Signed out successfully' })
+  res.status(StatusCodes.OK).json({ success: true, message: 'Signed out successfully' })
 })
 
 const refreshToken = asyncHandler(async (req, res) => {

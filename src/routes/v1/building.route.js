@@ -6,6 +6,7 @@ import { authMiddleware } from '../../middlewares/auth.middleware.js'
 const Router = express.Router()
 
 Router.use(authMiddleware.protectedRoute)
+Router.use(authMiddleware.authorizeRoles('ADMIN', 'MANAGER'))
 
 Router
   .route('/')

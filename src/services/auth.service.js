@@ -6,7 +6,6 @@ import { env } from '../config/environment.js'
 import { prisma } from '../config/prisma.js'
 import { JwtProvider } from '../providers/jwt.provider.js'
 import ApiError from '../utils/ApiError.js'
-import { authController } from '../controllers/auth.controller.js'
 
 const signup = async (userData) => {
   const { fullName, email, phone, password } = userData
@@ -137,18 +136,30 @@ const signin = async (userData) => {
 
   // Lưu session ở đây nếu schema Session tồn tại
 
+  await prisma.session.create({
+    data: {
+      userId: user.id,
+      refreshToken,
+      expiresAt: new Date(Date.now() + refreshTokenMaxAge),
+    },
+  })
+
   return {
     accessToken,
     refreshToken,
     refreshTokenMaxAge,
     user: {
-      id: user.id,
-      fullName: user.fullName,
-      email: user.email,
+      _id: user.id,
       phone: user.phone,
+      email: user.email,
+      displayName: user.fullName,
+      role: user.role || 'USER',
       avatarUrl: user.avatarUrl,
-      role: user.role,
+      avatarId: null,
+      loyaltyPoints: 0,
       isActive: user.isActive,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
     },
   }
 }
