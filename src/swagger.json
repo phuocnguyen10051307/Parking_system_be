@@ -31,7 +31,11 @@
     {
       "name": "Vehicles",
       "description": "Vehicle management endpoints"
-    }
+    },
+    {
+  "name": "Slots",
+  "description": "Parking slot endpoints"
+}
   ],
   "paths": {
     "/v1/status": {
@@ -696,6 +700,141 @@
       }
     }
   }
+},
+"/v1/slots": {
+  "get": {
+    "tags": ["Slots"],
+    "summary": "Get slots",
+    "description": "Get list of active parking slots. Can filter by vehicleType and status.",
+    "security": [
+      {
+        "bearerAuth": []
+      }
+    ],
+    "parameters": [
+      {
+        "name": "vehicleType",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "enum": ["MOTORBIKE", "CAR", "BICYCLE", "ELECTRIC_BIKE"]
+        },
+        "example": "MOTORBIKE"
+      },
+      {
+        "name": "status",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "enum": ["AVAILABLE", "OCCUPIED", "RESERVED", "MAINTENANCE", "BLOCKED"]
+        },
+        "example": "AVAILABLE"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Get slots successfully",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SlotListResponse"
+            }
+          }
+        }
+      },
+      "400": {
+        "$ref": "#/components/responses/BadRequest"
+      },
+      "401": {
+        "$ref": "#/components/responses/Unauthorized"
+      }
+    }
+  }
+},
+"/v1/slots/available": {
+  "get": {
+    "tags": ["Slots"],
+    "summary": "Get available slots",
+    "description": "Get list of available active parking slots. Can filter by vehicleType.",
+    "security": [
+      {
+        "bearerAuth": []
+      }
+    ],
+    "parameters": [
+      {
+        "name": "vehicleType",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "enum": ["MOTORBIKE", "CAR", "BICYCLE", "ELECTRIC_BIKE"]
+        },
+        "example": "MOTORBIKE"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Get available slots successfully",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SlotListResponse"
+            }
+          }
+        }
+      },
+      "400": {
+        "$ref": "#/components/responses/BadRequest"
+      },
+      "401": {
+        "$ref": "#/components/responses/Unauthorized"
+      }
+    }
+  }
+},
+"/v1/slots/{id}": {
+  "get": {
+    "tags": ["Slots"],
+    "summary": "Get slot by id",
+    "description": "Get detail of a parking slot by id.",
+    "security": [
+      {
+        "bearerAuth": []
+      }
+    ],
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "example": "cmqxslot123"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Get slot successfully",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SlotResponse"
+            }
+          }
+        }
+      },
+      "401": {
+        "$ref": "#/components/responses/Unauthorized"
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      }
+    }
+  }
 }
   },
 
@@ -1036,6 +1175,117 @@
       "items": {
         "$ref": "#/components/schemas/Vehicle"
       }
+    }
+  }
+},
+"Slot": {
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "example": "cmqxslot123"
+    },
+    "zoneId": {
+      "type": "string",
+      "example": "cmqxzone123"
+    },
+    "slotCode": {
+      "type": "string",
+      "example": "A1-001"
+    },
+    "vehicleType": {
+      "type": "string",
+      "enum": ["MOTORBIKE", "CAR", "BICYCLE", "ELECTRIC_BIKE"],
+      "example": "MOTORBIKE"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["AVAILABLE", "OCCUPIED", "RESERVED", "MAINTENANCE", "BLOCKED"],
+      "example": "AVAILABLE"
+    },
+    "isActive": {
+      "type": "boolean",
+      "example": true
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "example": "2026-06-16T10:00:00.000Z"
+    },
+    "zone": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "example": "cmqxzone123"
+        },
+        "name": {
+          "type": "string",
+          "example": "Zone A"
+        },
+        "floor": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "example": "cmqxfloor123"
+            },
+            "floorNumber": {
+              "type": "integer",
+              "example": 1
+            },
+            "vehicleType": {
+              "type": "string",
+              "enum": ["MOTORBIKE", "CAR", "BICYCLE", "ELECTRIC_BIKE"],
+              "example": "MOTORBIKE"
+            },
+            "building": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "cmqxbuilding123"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Building A"
+                },
+                "address": {
+                  "type": "string",
+                  "example": "FPT University HCMC"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+},
+"SlotListResponse": {
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "example": true
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Slot"
+      }
+    }
+  }
+},
+"SlotResponse": {
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "example": true
+    },
+    "data": {
+      "$ref": "#/components/schemas/Slot"
     }
   }
 }
