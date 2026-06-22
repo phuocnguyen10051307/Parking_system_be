@@ -4,6 +4,7 @@ import { authRoute } from './auth.route.js'
 import {buildingRoute} from './building.route.js'
 import { userRoute } from './user.route.js'
 import { vehicleRoute } from './vehicle.route.js'
+import { slotRoute } from './slot.route.js'
 const Router = express.Router()
 
 /** Check APIs V1 status */
@@ -19,5 +20,7 @@ Router.use('/admin/buildings', buildingRoute)
 Router.use('/users', userRoute)
 /** Vehicle APIs */
 Router.use('/vehicles', vehicleRoute)
+/** Slot APIs */
+Router.use('/slots', slotRoute)
 
 export const APIs_V1 = Router
