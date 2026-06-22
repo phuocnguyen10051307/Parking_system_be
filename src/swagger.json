@@ -27,6 +27,10 @@
     {
       "name": "Users",
       "description": "User management endpoints"
+    },
+    {
+      "name": "Vehicles",
+      "description": "Vehicle management endpoints"
     }
   ],
   "paths": {
@@ -296,10 +300,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
-           "403": {
+          "403": {
             "$ref": "#/components/responses/Forbidden"
-           }
-
+          }
         }
       }
     },
@@ -344,9 +347,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
-            "403": {
-              "$ref": "#/components/responses/Forbidden"
-            },  
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "description": "Building not found"
           }
@@ -381,9 +384,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
-            "403": {
-              "$ref": "#/components/responses/Forbidden"
-            },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "description": "Building not found"
           }
@@ -471,7 +474,229 @@
           }
         }
       }
+    },
+    "/v1/vehicles": {
+  "get": {
+    "tags": ["Vehicles"],
+    "summary": "Get vehicles",
+    "description": "Get list of vehicles. Normal users can only see their own vehicles. Staff/Admin can see all vehicles.",
+    "security": [
+      {
+        "bearerAuth": []
+      }
+    ],
+    "parameters": [
+      {
+        "name": "vehicleType",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "enum": ["MOTORBIKE", "CAR", "BICYCLE", "ELECTRIC_BIKE"]
+        },
+        "example": "MOTORBIKE"
+      },
+      {
+        "name": "ownerId",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Optional. Used by staff/admin to filter vehicles by owner.",
+        "example": "cmqxuser123"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Get vehicles successfully",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/VehicleListResponse"
+            }
+          }
+        }
+      },
+      "401": {
+        "$ref": "#/components/responses/Unauthorized"
+      }
     }
+  },
+  "post": {
+    "tags": ["Vehicles"],
+    "summary": "Create vehicle",
+    "description": "Create a new vehicle for the current user. Staff/Admin can create vehicle for another user by providing ownerId.",
+    "security": [
+      {
+        "bearerAuth": []
+      }
+    ],
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/CreateVehicleRequest"
+          }
+        }
+      }
+    },
+    "responses": {
+      "201": {
+        "description": "Create vehicle successfully",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/VehicleResponse"
+            }
+          }
+        }
+      },
+      "400": {
+        "$ref": "#/components/responses/BadRequest"
+      },
+      "401": {
+        "$ref": "#/components/responses/Unauthorized"
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      }
+    }
+  }
+},
+"/v1/vehicles/{id}": {
+  "get": {
+    "tags": ["Vehicles"],
+    "summary": "Get vehicle by id",
+    "description": "Get detail of a vehicle by id.",
+    "security": [
+      {
+        "bearerAuth": []
+      }
+    ],
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "example": "cmqxvehicle123"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Get vehicle successfully",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/VehicleResponse"
+            }
+          }
+        }
+      },
+      "401": {
+        "$ref": "#/components/responses/Unauthorized"
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      }
+    }
+  },
+  "put": {
+    "tags": ["Vehicles"],
+    "summary": "Update vehicle",
+    "description": "Update vehicle information by id.",
+    "security": [
+      {
+        "bearerAuth": []
+      }
+    ],
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "example": "cmqxvehicle123"
+      }
+    ],
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/UpdateVehicleRequest"
+          }
+        }
+      }
+    },
+    "responses": {
+      "200": {
+        "description": "Update vehicle successfully",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/VehicleResponse"
+            }
+          }
+        }
+      },
+      "400": {
+        "$ref": "#/components/responses/BadRequest"
+      },
+      "401": {
+        "$ref": "#/components/responses/Unauthorized"
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      }
+    }
+  },
+  "delete": {
+    "tags": ["Vehicles"],
+    "summary": "Delete vehicle",
+    "description": "Delete vehicle by id.",
+    "security": [
+      {
+        "bearerAuth": []
+      }
+    ],
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "example": "cmqxvehicle123"
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Delete vehicle successfully",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/MessageResponse"
+            }
+          }
+        }
+      },
+      "401": {
+        "$ref": "#/components/responses/Unauthorized"
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      }
+    }
+  }
+}
   },
 
   "components": {
@@ -676,7 +901,144 @@
           }
         },
         "required": ["currentPassword", "newPassword"]
+      },
+      "Vehicle": {
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "example": "cmqxvehicle123"
+    },
+    "ownerId": {
+      "type": "string",
+      "example": "cmqxuser123"
+    },
+    "licensePlate": {
+      "type": "string",
+      "example": "59A1-12345"
+    },
+    "vehicleType": {
+      "type": "string",
+      "enum": ["MOTORBIKE", "CAR", "BICYCLE", "ELECTRIC_BIKE"],
+      "example": "MOTORBIKE"
+    },
+    "brand": {
+      "type": "string",
+      "example": "Honda"
+    },
+    "color": {
+      "type": "string",
+      "example": "Black"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "example": "2026-06-16T10:00:00.000Z"
+    },
+    "owner": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "example": "cmqxuser123"
+        },
+        "fullName": {
+          "type": "string",
+          "example": "Tran Minh Quan"
+        },
+        "email": {
+          "type": "string",
+          "example": "quan001@test.com"
+        },
+        "phone": {
+          "type": "string",
+          "example": "0987654321"
+        }
       }
+    }
+  }
+},
+"CreateVehicleRequest": {
+  "type": "object",
+  "required": ["licensePlate", "vehicleType"],
+  "properties": {
+    "ownerId": {
+      "type": "string",
+      "description": "Optional. Staff/Admin can create vehicle for another user.",
+      "example": "cmqxuser123"
+    },
+    "licensePlate": {
+      "type": "string",
+      "example": "59A1-12345"
+    },
+    "vehicleType": {
+      "type": "string",
+      "enum": ["MOTORBIKE", "CAR", "BICYCLE", "ELECTRIC_BIKE"],
+      "example": "MOTORBIKE"
+    },
+    "brand": {
+      "type": "string",
+      "example": "Honda"
+    },
+    "color": {
+      "type": "string",
+      "example": "Black"
+    }
+  }
+},
+"UpdateVehicleRequest": {
+  "type": "object",
+  "properties": {
+    "licensePlate": {
+      "type": "string",
+      "example": "59A1-67890"
+    },
+    "vehicleType": {
+      "type": "string",
+      "enum": ["MOTORBIKE", "CAR", "BICYCLE", "ELECTRIC_BIKE"],
+      "example": "MOTORBIKE"
+    },
+    "brand": {
+      "type": "string",
+      "example": "Yamaha"
+    },
+    "color": {
+      "type": "string",
+      "example": "Red"
+    }
+  }
+},
+"VehicleResponse": {
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "example": true
+    },
+    "message": {
+      "type": "string",
+      "example": "Tạo phương tiện thành công"
+    },
+    "data": {
+      "$ref": "#/components/schemas/Vehicle"
+    }
+  }
+},
+"VehicleListResponse": {
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "example": true
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Vehicle"
+      }
+    }
+  }
+}
     },
 
     "responses": {
@@ -711,7 +1073,20 @@
             }
           }
         }
+      },
+      "NotFound": {
+  "description": "Resource not found",
+  "content": {
+    "application/json": {
+      "schema": {
+        "$ref": "#/components/schemas/MessageResponse"
+      },
+      "example": {
+        "message": "Resource not found"
       }
+    }
+  }
+}
     },
 
     "securitySchemes": {
