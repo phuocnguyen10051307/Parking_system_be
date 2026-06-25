@@ -10,7 +10,8 @@
     "start": "node src/server.js",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "seed:slots": "node --env-file=.env scripts/seed-slot.js"
+    "seed:slots": "node --env-file=.env scripts/seed-slot.js",
+    "seed:test-data": "node --env-file=.env scripts/seed-test-data.js"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
