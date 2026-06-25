@@ -5,6 +5,9 @@ import {buildingRoute} from './building.route.js'
 import { userRoute } from './user.route.js'
 import { vehicleRoute } from './vehicle.route.js'
 import { slotRoute } from './slot.route.js'
+import { reservationRoute } from './reservation.route.js'
+import { feedbackRoute } from './feedback.route.js'
+import { parkingSessionRoute } from './parking-session.route.js'
 const Router = express.Router()
 
 /** Check APIs V1 status */
@@ -22,5 +25,11 @@ Router.use('/users', userRoute)
 Router.use('/vehicles', vehicleRoute)
 /** Slot APIs */
 Router.use('/slots', slotRoute)
+/** Reservation APIs */
+Router.use('/reservations', reservationRoute)
+/** Feedback APIs */
+Router.use('/feedbacks', feedbackRoute)
+/** Parking Session APIs */
+Router.use('/parking-sessions', parkingSessionRoute)
 
 export const APIs_V1 = Router
