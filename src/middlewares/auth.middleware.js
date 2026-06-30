@@ -8,12 +8,11 @@ import { pickUser } from '../utils/formatters.js'
 // Authentication - verify who the current user is
 export const protectedRoute = async (req, res, next) => {
   try {
-    const authHeader = req.headers['authorization']
-    const token = authHeader && authHeader.split(' ')[1] // Bearer <token>
+    const token = req.cookies?.accessToken
 
     if (!token) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
-        message: 'Access token is missing',
+        message: 'Access token cookie is missing',
       })
     }
 
@@ -97,3 +96,4 @@ export const authMiddleware = {
   protectedRoute,
   authorizeRoles,
 }
+

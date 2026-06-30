@@ -31,8 +31,18 @@ const checkInParkingSession = asyncHandler(async (req, res) => {
   })
 })
 
+const checkInParkingByPlate = asyncHandler(async (req, res) => {
+  const session = await parkingSessionService.checkInParkingByPlate(req.user, req.body, req.file)
+
+  res.status(StatusCodes.CREATED).json({
+    success: true,
+    message: 'Parking session checked in successfully',
+    data: session,
+  })
+})
 const checkOutParkingSession = asyncHandler(async (req, res) => {
-  const session = await parkingSessionService.checkOutParkingSession(req.user, req.params.id, req.body)
+  const parkingSessionId = req.params.id || req.body.id
+  const session = await parkingSessionService.checkOutParkingSession(req.user, parkingSessionId, req.body, req.file)
 
   res.status(StatusCodes.OK).json({
     success: true,
@@ -45,5 +55,6 @@ export const parkingSessionController = {
   getParkingSessions,
   getParkingSessionById,
   checkInParkingSession,
+  checkInParkingByPlate,
   checkOutParkingSession,
 }
