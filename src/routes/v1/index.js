@@ -1,13 +1,14 @@
 import express from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { authRoute } from './auth.route.js'
-import {buildingRoute} from './building.route.js'
+import { buildingRoute } from './building.route.js'
 import { userRoute } from './user.route.js'
 import { vehicleRoute } from './vehicle.route.js'
 import { slotRoute } from './slot.route.js'
 import { reservationRoute } from './reservation.route.js'
 import { feedbackRoute } from './feedback.route.js'
 import { parkingSessionRoute } from './parking-session.route.js'
+import { parkingRoute } from './parking.route.js'
 const Router = express.Router()
 
 /** Check APIs V1 status */
@@ -31,5 +32,7 @@ Router.use('/reservations', reservationRoute)
 Router.use('/feedbacks', feedbackRoute)
 /** Parking Session APIs */
 Router.use('/parking-sessions', parkingSessionRoute)
+/** Staff parking operations */
+Router.use('/parking', parkingRoute)
 
 export const APIs_V1 = Router

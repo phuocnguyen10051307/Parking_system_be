@@ -6,7 +6,7 @@ import {
   PHONE_RULE_MESSAGE,
 } from '../utils/validators.js'
 
-const signupSchema = z.object({
+const signupBaseSchema = z.object({
   fullName: z
     .string()
     .trim()
@@ -20,6 +20,13 @@ const signupSchema = z.object({
   password: z.string().regex(PASSWORD_RULE, PASSWORD_RULE_MESSAGE),
 })
 
+const requestSignupOtpSchema = signupBaseSchema
+
+const signupSchema = z.object({
+  email: z.string().trim().email('Invalid email address'),
+  otpCode: z.string().trim().regex(/^\d{6}$/, 'OTP code must be 6 digits'),
+})
+
 const signinSchema = z.object({
   email: z.string().trim().email('Invalid email address'),
   password: z
@@ -29,6 +36,7 @@ const signinSchema = z.object({
 })
 
 export const authValidation = {
+  requestSignupOtpSchema,
   signupSchema,
   signinSchema,
 }

@@ -39,6 +39,10 @@ const normalizeLicensePlate = (licensePlate) => {
   return licensePlate.trim().toUpperCase()
 }
 
+const normalizePlateForCompare = (licensePlate) => {
+  return normalizeLicensePlate(licensePlate).replace(/[^A-Z0-9]/g, '')
+}
+
 const getVehicles = async (currentUser, query) => {
   const where = {}
 
@@ -62,6 +66,11 @@ const getVehicles = async (currentUser, query) => {
       createdAt: 'desc',
     },
   })
+
+  if (query.licensePlate) {
+    const targetPlate = normalizePlateForCompare(query.licensePlate)
+    return vehicles.filter((vehicle) => normalizePlateForCompare(vehicle.licensePlate) === targetPlate)
+  }
 
   return vehicles
 }
