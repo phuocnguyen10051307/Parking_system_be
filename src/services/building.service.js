@@ -26,6 +26,24 @@ const createBuilding = async (data) => {
 }
 
 const updateBuilding = async (id, data) => {
+  const highestFloor = await prisma.floor.findFirst({
+    where: {
+      buildingId: id,
+      floorNumber: {
+        gt: 0,
+      },
+    },
+    orderBy: {
+      floorNumber: 'desc',
+    },
+  })
+
+  if (highestFloor && Number(data.totalFloors) < highestFloor.floorNumber) {
+    const error = new Error('totalFloors cannot be less than the highest existing floorNumber')
+    error.statusCode = 400
+    throw error
+  }
+
   return await prisma.parkingBuilding.update({
     where: { id },
     data: {

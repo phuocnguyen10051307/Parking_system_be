@@ -1,39 +1,35 @@
 import { StatusCodes } from 'http-status-codes'
 
-import { buildingService } from '../services/building.service.js'
+import { zoneService } from '../services/zone.service.js'
 
-const validateBuildingBody = (body) => {
-  const { name, address, totalFloors } = body
+const validateZoneBody = (body) => {
+  const { floorId, name } = body
 
-  if (!name || !address || totalFloors === undefined) {
-    return 'name, address and totalFloors are required'
-  }
-
-  if (Number.isNaN(Number(totalFloors)) || Number(totalFloors) <= 0) {
-    return 'totalFloors must be a positive number'
+  if (!floorId || !name?.trim()) {
+    return 'floorId and name are required'
   }
 
   return null
 }
 
-const getBuildings = async (req, res) => {
+const getZones = async (req, res) => {
   try {
-    const buildings = await buildingService.getBuildings()
+    const zones = await zoneService.getZones()
 
     return res.status(StatusCodes.OK).json({
-      data: buildings,
+      data: zones,
     })
   } catch (error) {
-    console.error('Get buildings error:', error)
+    console.error('Get zones error:', error)
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       message: 'Internal server error',
     })
   }
 }
 
-const createBuilding = async (req, res) => {
+const createZone = async (req, res) => {
   try {
-    const validationError = validateBuildingBody(req.body)
+    const validationError = validateZoneBody(req.body)
 
     if (validationError) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -41,24 +37,33 @@ const createBuilding = async (req, res) => {
       })
     }
 
-    const building = await buildingService.createBuilding(req.body)
+    const zone = await zoneService.createZone({
+      ...req.body,
+      name: req.body.name.trim(),
+    })
 
     return res.status(StatusCodes.CREATED).json({
-      message: 'Building created successfully',
-      data: building,
+      message: 'Zone created successfully',
+      data: zone,
     })
   } catch (error) {
-    console.error('Create building error:', error)
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        message: error.message,
+      })
+    }
+
+    console.error('Create zone error:', error)
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       message: 'Internal server error',
     })
   }
 }
 
-const updateBuilding = async (req, res) => {
+const updateZone = async (req, res) => {
   try {
     const { id } = req.params
-    const validationError = validateBuildingBody(req.body)
+    const validationError = validateZoneBody(req.body)
 
     if (validationError) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -66,11 +71,14 @@ const updateBuilding = async (req, res) => {
       })
     }
 
-    const building = await buildingService.updateBuilding(id, req.body)
+    const zone = await zoneService.updateZone(id, {
+      ...req.body,
+      name: req.body.name.trim(),
+    })
 
     return res.status(StatusCodes.OK).json({
-      message: 'Building updated successfully',
-      data: building,
+      message: 'Zone updated successfully',
+      data: zone,
     })
   } catch (error) {
     if (error.statusCode) {
@@ -81,25 +89,25 @@ const updateBuilding = async (req, res) => {
 
     if (error.code === 'P2025') {
       return res.status(StatusCodes.NOT_FOUND).json({
-        message: 'Building not found',
+        message: 'Zone not found',
       })
     }
 
-    console.error('Update building error:', error)
+    console.error('Update zone error:', error)
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       message: 'Internal server error',
     })
   }
 }
 
-const deleteBuilding = async (req, res) => {
+const deleteZone = async (req, res) => {
   try {
     const { id } = req.params
 
-    await buildingService.deleteBuilding(id)
+    await zoneService.deleteZone(id)
 
     return res.status(StatusCodes.OK).json({
-      message: 'Building deleted successfully',
+      message: 'Zone deleted successfully',
     })
   } catch (error) {
     if (error.statusCode) {
@@ -110,20 +118,20 @@ const deleteBuilding = async (req, res) => {
 
     if (error.code === 'P2025') {
       return res.status(StatusCodes.NOT_FOUND).json({
-        message: 'Building not found',
+        message: 'Zone not found',
       })
     }
 
-    console.error('Delete building error:', error)
+    console.error('Delete zone error:', error)
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       message: 'Internal server error',
     })
   }
 }
 
-export const buildingController = {
-  getBuildings,
-  createBuilding,
-  updateBuilding,
-  deleteBuilding,
+export const zoneController = {
+  getZones,
+  createZone,
+  updateZone,
+  deleteZone,
 }
