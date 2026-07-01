@@ -33,9 +33,9 @@
       "description": "Vehicle management endpoints"
     },
     {
-  "name": "Slots",
-  "description": "Parking slot endpoints"
-},
+      "name": "Slots",
+      "description": "Parking slot endpoints"
+    },
     {
       "name": "Reservations",
       "description": "Reservation management endpoints"
@@ -52,7 +52,9 @@
   "paths": {
     "/v1/status": {
       "get": {
-        "tags": ["System"],
+        "tags": [
+          "System"
+        ],
         "summary": "Check API status",
         "responses": {
           "200": {
@@ -71,10 +73,11 @@
         }
       }
     },
-
     "/v1/auth/signup": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Register a new account",
         "requestBody": {
           "required": true,
@@ -103,10 +106,11 @@
         }
       }
     },
-
     "/v1/auth/signin": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Sign in with email and password",
         "description": "Returns an access token and sets a refreshToken cookie.",
         "requestBody": {
@@ -150,10 +154,11 @@
         }
       }
     },
-
     "/v1/auth/me": {
       "get": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Get current authenticated user",
         "security": [
           {
@@ -185,10 +190,11 @@
         }
       }
     },
-
     "/v1/auth/signout": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Sign out",
         "security": [
           {
@@ -209,10 +215,11 @@
         }
       }
     },
-
     "/v1/auth/refresh-token": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Refresh access token",
         "security": [
           {
@@ -241,7 +248,9 @@
     },
     "/v1/admin/buildings": {
       "get": {
-        "tags": ["Buildings"],
+        "tags": [
+          "Buildings"
+        ],
         "summary": "Get all buildings",
         "security": [
           {
@@ -273,7 +282,9 @@
         }
       },
       "post": {
-        "tags": ["Buildings"],
+        "tags": [
+          "Buildings"
+        ],
         "summary": "Create a new building",
         "security": [
           {
@@ -322,10 +333,11 @@
         }
       }
     },
-
     "/v1/admin/buildings/{id}": {
       "put": {
-        "tags": ["Buildings"],
+        "tags": [
+          "Buildings"
+        ],
         "summary": "Update a building",
         "security": [
           {
@@ -372,7 +384,9 @@
         }
       },
       "delete": {
-        "tags": ["Buildings"],
+        "tags": [
+          "Buildings"
+        ],
         "summary": "Delete a building",
         "security": [
           {
@@ -411,7 +425,9 @@
     },
     "/v1/users/profile": {
       "get": {
-        "tags": ["Users"],
+        "tags": [
+          "Users"
+        ],
         "summary": "Get current user profile",
         "security": [
           {
@@ -428,7 +444,9 @@
         }
       },
       "put": {
-        "tags": ["Users"],
+        "tags": [
+          "Users"
+        ],
         "summary": "Update current user profile",
         "security": [
           {
@@ -458,10 +476,11 @@
         }
       }
     },
-
     "/v1/users/change-password": {
       "put": {
-        "tags": ["Users"],
+        "tags": [
+          "Users"
+        ],
         "summary": "Change current user password",
         "security": [
           {
@@ -492,886 +511,1238 @@
       }
     },
     "/v1/vehicles": {
-  "get": {
-    "tags": ["Vehicles"],
-    "summary": "Get vehicles",
-    "description": "Get list of vehicles. Normal users can only see their own vehicles. Staff/Admin can see all vehicles.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "vehicleType",
-        "in": "query",
-        "required": false,
-        "schema": {
-          "type": "string",
-          "enum": ["MOTORBIKE", "CAR", "BICYCLE", "ELECTRIC_BIKE"]
-        },
-        "example": "MOTORBIKE"
-      },
-      {
-        "name": "ownerId",
-        "in": "query",
-        "required": false,
-        "schema": {
-          "type": "string"
-        },
-        "description": "Optional. Used by staff/admin to filter vehicles by owner.",
-        "example": "cmqxuser123"
-      }
-    ],
-    "responses": {
-      "200": {
-        "description": "Get vehicles successfully",
-        "content": {
-          "application/json": {
+      "get": {
+        "tags": [
+          "Vehicles"
+        ],
+        "summary": "Get vehicles",
+        "description": "Get list of vehicles. Normal users can only see their own vehicles. Staff/Admin can see all vehicles.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vehicleType",
+            "in": "query",
+            "required": false,
             "schema": {
-              "$ref": "#/components/schemas/VehicleListResponse"
+              "type": "string",
+              "enum": [
+                "MOTORBIKE",
+                "CAR",
+                "BICYCLE",
+                "ELECTRIC_BIKE"
+              ]
+            },
+            "example": "MOTORBIKE"
+          },
+          {
+            "name": "ownerId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional. Used by staff/admin to filter vehicles by owner.",
+            "example": "cmqxuser123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get vehicles successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleListResponse"
+                }
+              }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      }
-    }
-  },
-  "post": {
-    "tags": ["Vehicles"],
-    "summary": "Create vehicle",
-    "description": "Create a new vehicle for the current user. Staff/Admin can create vehicle for another user by providing ownerId.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "requestBody": {
-      "required": true,
-      "content": {
-        "application/json": {
-          "schema": {
-            "$ref": "#/components/schemas/CreateVehicleRequest"
+      "post": {
+        "tags": [
+          "Vehicles"
+        ],
+        "summary": "Create vehicle",
+        "description": "Create a new vehicle for the current user. Staff/Admin can create vehicle for another user by providing ownerId.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVehicleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Create vehicle successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
     },
-    "responses": {
-      "201": {
-        "description": "Create vehicle successfully",
-        "content": {
-          "application/json": {
+    "/v1/vehicles/{id}": {
+      "get": {
+        "tags": [
+          "Vehicles"
+        ],
+        "summary": "Get vehicle by id",
+        "description": "Get detail of a vehicle by id.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
             "schema": {
-              "$ref": "#/components/schemas/VehicleResponse"
+              "type": "string"
+            },
+            "example": "cmqxvehicle123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get vehicle successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleResponse"
+                }
+              }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
-      "400": {
-        "$ref": "#/components/responses/BadRequest"
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      },
-      "404": {
-        "$ref": "#/components/responses/NotFound"
-      }
-    }
-  }
-},
-"/v1/vehicles/{id}": {
-  "get": {
-    "tags": ["Vehicles"],
-    "summary": "Get vehicle by id",
-    "description": "Get detail of a vehicle by id.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        },
-        "example": "cmqxvehicle123"
-      }
-    ],
-    "responses": {
-      "200": {
-        "description": "Get vehicle successfully",
-        "content": {
-          "application/json": {
+      "put": {
+        "tags": [
+          "Vehicles"
+        ],
+        "summary": "Update vehicle",
+        "description": "Update vehicle information by id.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
             "schema": {
-              "$ref": "#/components/schemas/VehicleResponse"
+              "type": "string"
+            },
+            "example": "cmqxvehicle123"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVehicleRequest"
+              }
             }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Update vehicle successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      },
-      "404": {
-        "$ref": "#/components/responses/NotFound"
-      }
-    }
-  },
-  "put": {
-    "tags": ["Vehicles"],
-    "summary": "Update vehicle",
-    "description": "Update vehicle information by id.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        },
-        "example": "cmqxvehicle123"
-      }
-    ],
-    "requestBody": {
-      "required": true,
-      "content": {
-        "application/json": {
-          "schema": {
-            "$ref": "#/components/schemas/UpdateVehicleRequest"
+      "delete": {
+        "tags": [
+          "Vehicles"
+        ],
+        "summary": "Delete vehicle",
+        "description": "Delete vehicle by id.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmqxvehicle123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete vehicle successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
     },
-    "responses": {
-      "200": {
-        "description": "Update vehicle successfully",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/VehicleResponse"
-            }
+    "/v1/slots": {
+      "get": {
+        "tags": [
+          "Slots"
+        ],
+        "summary": "Get slots",
+        "description": "Get list of active parking slots. Can filter by vehicleType and status.",
+        "security": [
+          {
+            "bearerAuth": []
           }
-        }
-      },
-      "400": {
-        "$ref": "#/components/responses/BadRequest"
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      },
-      "404": {
-        "$ref": "#/components/responses/NotFound"
-      }
-    }
-  },
-  "delete": {
-    "tags": ["Vehicles"],
-    "summary": "Delete vehicle",
-    "description": "Delete vehicle by id.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        },
-        "example": "cmqxvehicle123"
-      }
-    ],
-    "responses": {
-      "200": {
-        "description": "Delete vehicle successfully",
-        "content": {
-          "application/json": {
+        ],
+        "parameters": [
+          {
+            "name": "vehicleType",
+            "in": "query",
+            "required": false,
             "schema": {
-              "$ref": "#/components/schemas/MessageResponse"
-            }
-          }
-        }
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      },
-      "404": {
-        "$ref": "#/components/responses/NotFound"
-      }
-    }
-  }
-},
-"/v1/slots": {
-  "get": {
-    "tags": ["Slots"],
-    "summary": "Get slots",
-    "description": "Get list of active parking slots. Can filter by vehicleType and status.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "vehicleType",
-        "in": "query",
-        "required": false,
-        "schema": {
-          "type": "string",
-          "enum": ["MOTORBIKE", "CAR", "BICYCLE", "ELECTRIC_BIKE"]
-        },
-        "example": "MOTORBIKE"
-      },
-      {
-        "name": "status",
-        "in": "query",
-        "required": false,
-        "schema": {
-          "type": "string",
-          "enum": ["AVAILABLE", "OCCUPIED", "RESERVED", "MAINTENANCE", "BLOCKED"]
-        },
-        "example": "AVAILABLE"
-      }
-    ],
-    "responses": {
-      "200": {
-        "description": "Get slots successfully",
-        "content": {
-          "application/json": {
+              "type": "string",
+              "enum": [
+                "MOTORBIKE",
+                "CAR",
+                "BICYCLE",
+                "ELECTRIC_BIKE"
+              ]
+            },
+            "example": "MOTORBIKE"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
             "schema": {
-              "$ref": "#/components/schemas/SlotListResponse"
-            }
+              "type": "string",
+              "enum": [
+                "AVAILABLE",
+                "OCCUPIED",
+                "RESERVED",
+                "MAINTENANCE",
+                "BLOCKED"
+              ]
+            },
+            "example": "AVAILABLE"
           }
-        }
-      },
-      "400": {
-        "$ref": "#/components/responses/BadRequest"
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      }
-    }
-  }
-},
-"/v1/slots/available": {
-  "get": {
-    "tags": ["Slots"],
-    "summary": "Get available slots",
-    "description": "Get list of available active parking slots. Can filter by vehicleType.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "vehicleType",
-        "in": "query",
-        "required": false,
-        "schema": {
-          "type": "string",
-          "enum": ["MOTORBIKE", "CAR", "BICYCLE", "ELECTRIC_BIKE"]
-        },
-        "example": "MOTORBIKE"
-      }
-    ],
-    "responses": {
-      "200": {
-        "description": "Get available slots successfully",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/SlotListResponse"
+        ],
+        "responses": {
+          "200": {
+            "description": "Get slots successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotListResponse"
+                }
+              }
             }
-          }
-        }
-      },
-      "400": {
-        "$ref": "#/components/responses/BadRequest"
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      }
-    }
-  }
-},
-"/v1/slots/{id}": {
-  "get": {
-    "tags": ["Slots"],
-    "summary": "Get slot by id",
-    "description": "Get detail of a parking slot by id.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        },
-        "example": "cmqxslot123"
-      }
-    ],
-    "responses": {
-      "200": {
-        "description": "Get slot successfully",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/SlotResponse"
-            }
-          }
-        }
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      },
-      "404": {
-        "$ref": "#/components/responses/NotFound"
-      }
-    }
-  }
-},
-"/v1/reservations": {
-  "get": {
-    "tags": ["Reservations"],
-    "summary": "Get reservations",
-    "description": "Get all reservations for the authenticated user, or all reservations for staff roles.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "status",
-        "in": "query",
-        "required": false,
-        "schema": {
-          "type": "string",
-          "enum": ["PENDING", "CONFIRMED", "CANCELLED", "EXPIRED"]
-        },
-        "example": "PENDING"
-      },
-      {
-        "name": "userId",
-        "in": "query",
-        "required": false,
-        "schema": {
-          "type": "string"
-        },
-        "example": "cmqxuser123"
-      }
-    ],
-    "responses": {
-      "200": {
-        "description": "Reservations retrieved successfully",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ReservationListResponse"
-            }
-          }
-        }
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      }
-    }
-  },
-  "post": {
-    "tags": ["Reservations"],
-    "summary": "Create a reservation",
-    "description": "Create a new parking reservation for the authenticated user.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "requestBody": {
-      "required": true,
-      "content": {
-        "application/json": {
-          "schema": {
-            "$ref": "#/components/schemas/ReservationCreateRequest"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
     },
-    "responses": {
-      "201": {
-        "description": "Reservation created successfully",
-        "content": {
-          "application/json": {
+    "/v1/slots/available": {
+      "get": {
+        "tags": [
+          "Slots"
+        ],
+        "summary": "Get available slots",
+        "description": "Get list of available active parking slots. Can filter by vehicleType.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vehicleType",
+            "in": "query",
+            "required": false,
             "schema": {
-              "$ref": "#/components/schemas/ReservationResponse"
+              "type": "string",
+              "enum": [
+                "MOTORBIKE",
+                "CAR",
+                "BICYCLE",
+                "ELECTRIC_BIKE"
+              ]
+            },
+            "example": "MOTORBIKE"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get available slots successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotListResponse"
+                }
+              }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/v1/slots/{id}": {
+      "get": {
+        "tags": [
+          "Slots"
+        ],
+        "summary": "Get slot by id",
+        "description": "Get detail of a parking slot by id.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmqxslot123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get slot successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/reservations": {
+      "get": {
+        "tags": [
+          "Reservations"
+        ],
+        "summary": "Get reservations",
+        "description": "Get all reservations for the authenticated user, or all reservations for staff roles.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "CONFIRMED",
+                "CANCELLED",
+                "EXPIRED"
+              ]
+            },
+            "example": "PENDING"
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmqxuser123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reservations retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       },
-      "400": {
-        "$ref": "#/components/responses/BadRequest"
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      },
-      "404": {
-        "$ref": "#/components/responses/NotFound"
-      }
-    }
-  }
-},
-"/v1/reservations/{id}": {
-  "get": {
-    "tags": ["Reservations"],
-    "summary": "Get reservation by id",
-    "description": "Get the details of a specific reservation.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
+      "post": {
+        "tags": [
+          "Reservations"
+        ],
+        "summary": "Create a reservation",
+        "description": "Create a new parking reservation for the authenticated user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReservationCreateRequest"
+              }
+            }
+          }
         },
-        "example": "cmqxreservation123"
-      }
-    ],
-    "responses": {
-      "200": {
-        "description": "Reservation retrieved successfully",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ReservationResponse"
+        "responses": {
+          "201": {
+            "description": "Reservation created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationResponse"
+                }
+              }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/reservations/{id}": {
+      "get": {
+        "tags": [
+          "Reservations"
+        ],
+        "summary": "Get reservation by id",
+        "description": "Get the details of a specific reservation.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmqxreservation123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reservation retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/reservations/{id}/cancel": {
+      "put": {
+        "tags": [
+          "Reservations"
+        ],
+        "summary": "Cancel a reservation",
+        "description": "Cancel an existing reservation by id.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmqxreservation123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reservation cancelled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/feedbacks": {
+      "get": {
+        "tags": [
+          "Feedbacks"
+        ],
+        "summary": "Get feedbacks",
+        "description": "Get all feedback entries for the authenticated user, or all feedback entries for staff roles.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "IN_PROGRESS",
+                "RESOLVED"
+              ]
+            },
+            "example": "OPEN"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feedbacks retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      },
-      "403": {
-        "$ref": "#/components/responses/Forbidden"
-      },
-      "404": {
-        "$ref": "#/components/responses/NotFound"
-      }
-    }
-  }
-},
-"/v1/reservations/{id}/cancel": {
-  "put": {
-    "tags": ["Reservations"],
-    "summary": "Cancel a reservation",
-    "description": "Cancel an existing reservation by id.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
+      "post": {
+        "tags": [
+          "Feedbacks"
+        ],
+        "summary": "Create feedback",
+        "description": "Submit a new feedback entry for the authenticated user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackCreateRequest"
+              }
+            }
+          }
         },
-        "example": "cmqxreservation123"
-      }
-    ],
-    "responses": {
-      "200": {
-        "description": "Reservation cancelled successfully",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ReservationResponse"
+        "responses": {
+          "201": {
+            "description": "Feedback created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackResponse"
+                }
+              }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/v1/feedbacks/{id}": {
+      "get": {
+        "tags": [
+          "Feedbacks"
+        ],
+        "summary": "Get feedback by id",
+        "description": "Get a specific feedback entry.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmqxfeedback123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feedback retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      },
-      "403": {
-        "$ref": "#/components/responses/Forbidden"
-      },
-      "404": {
-        "$ref": "#/components/responses/NotFound"
-      }
-    }
-  }
-},
-"/v1/feedbacks": {
-  "get": {
-    "tags": ["Feedbacks"],
-    "summary": "Get feedbacks",
-    "description": "Get all feedback entries for the authenticated user, or all feedback entries for staff roles.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "status",
-        "in": "query",
-        "required": false,
-        "schema": {
-          "type": "string",
-          "enum": ["OPEN", "IN_PROGRESS", "RESOLVED"]
+      "put": {
+        "tags": [
+          "Feedbacks"
+        ],
+        "summary": "Update feedback",
+        "description": "Update an existing feedback entry.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmqxfeedback123"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackUpdateRequest"
+              }
+            }
+          }
         },
-        "example": "OPEN"
-      }
-    ],
-    "responses": {
-      "200": {
-        "description": "Feedbacks retrieved successfully",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/FeedbackListResponse"
+        "responses": {
+          "200": {
+            "description": "Feedback updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackResponse"
+                }
+              }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/parking-sessions": {
+      "get": {
+        "tags": [
+          "Parking Sessions"
+        ],
+        "summary": "Get parking sessions",
+        "description": "Get parking sessions for the authenticated user, or all sessions for staff roles.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "COMPLETED",
+                "LOST_TICKET",
+                "OVERDUE"
+              ]
+            },
+            "example": "ACTIVE"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Parking sessions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParkingSessionListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/v1/parking-sessions/{id}": {
+      "get": {
+        "tags": [
+          "Parking Sessions"
+        ],
+        "summary": "Get parking session by id",
+        "description": "Get details for a specific parking session.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmqxsession123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Parking session retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParkingSessionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/parking-sessions/check-in": {
+      "post": {
+        "tags": [
+          "Parking Sessions"
+        ],
+        "summary": "Check in to a parking session",
+        "description": "Create a new active parking session for a vehicle at a slot.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParkingSessionCheckInRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Parking session checked in successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParkingSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/parking-sessions/check-out": {
+      "post": {
+        "tags": [
+          "Parking Sessions"
+        ],
+        "summary": "Check out of a parking session",
+        "description": "Complete an existing parking session.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParkingSessionCheckOutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Parking session checked out successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParkingSessionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/admin/slots": {
+      "get": {
+        "tags": [
+          "Slots"
+        ],
+        "summary": "Get all slots for management",
+        "description": "Get parking slots for admin and manager. Can filter by vehicleType, status, zoneId and isActive.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vehicleType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "MOTORBIKE",
+                "CAR",
+                "BICYCLE",
+                "ELECTRIC_BIKE"
+              ]
+            },
+            "example": "MOTORBIKE"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "AVAILABLE",
+                "OCCUPIED",
+                "RESERVED",
+                "MAINTENANCE",
+                "BLOCKED"
+              ]
+            },
+            "example": "AVAILABLE"
+          },
+          {
+            "name": "zoneId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmqxzone123"
+          },
+          {
+            "name": "isActive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "example": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get slots successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
+      "post": {
+        "tags": [
+          "Slots"
+        ],
+        "summary": "Create a slot",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SlotManagementRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Slot created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/admin/slots/{id}": {
+      "get": {
+        "tags": [
+          "Slots"
+        ],
+        "summary": "Get slot by id for management",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmqxslot123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get slot successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Slots"
+        ],
+        "summary": "Update a slot",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmqxslot123"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SlotManagementRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Slot updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Slots"
+        ],
+        "summary": "Delete a slot",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmqxslot123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Slot deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
       }
     }
   },
-  "post": {
-    "tags": ["Feedbacks"],
-    "summary": "Create feedback",
-    "description": "Submit a new feedback entry for the authenticated user.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "requestBody": {
-      "required": true,
-      "content": {
-        "application/json": {
-          "schema": {
-            "$ref": "#/components/schemas/FeedbackCreateRequest"
-          }
-        }
-      }
-    },
-    "responses": {
-      "201": {
-        "description": "Feedback created successfully",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/FeedbackResponse"
-            }
-          }
-        }
-      },
-      "400": {
-        "$ref": "#/components/responses/BadRequest"
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      }
-    }
-  }
-},
-"/v1/feedbacks/{id}": {
-  "get": {
-    "tags": ["Feedbacks"],
-    "summary": "Get feedback by id",
-    "description": "Get a specific feedback entry.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        },
-        "example": "cmqxfeedback123"
-      }
-    ],
-    "responses": {
-      "200": {
-        "description": "Feedback retrieved successfully",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/FeedbackResponse"
-            }
-          }
-        }
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      },
-      "403": {
-        "$ref": "#/components/responses/Forbidden"
-      },
-      "404": {
-        "$ref": "#/components/responses/NotFound"
-      }
-    }
-  },
-  "put": {
-    "tags": ["Feedbacks"],
-    "summary": "Update feedback",
-    "description": "Update an existing feedback entry.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        },
-        "example": "cmqxfeedback123"
-      }
-    ],
-    "requestBody": {
-      "required": true,
-      "content": {
-        "application/json": {
-          "schema": {
-            "$ref": "#/components/schemas/FeedbackUpdateRequest"
-          }
-        }
-      }
-    },
-    "responses": {
-      "200": {
-        "description": "Feedback updated successfully",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/FeedbackResponse"
-            }
-          }
-        }
-      },
-      "400": {
-        "$ref": "#/components/responses/BadRequest"
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      },
-      "403": {
-        "$ref": "#/components/responses/Forbidden"
-      },
-      "404": {
-        "$ref": "#/components/responses/NotFound"
-      }
-    }
-  }
-},
-"/v1/parking-sessions": {
-  "get": {
-    "tags": ["Parking Sessions"],
-    "summary": "Get parking sessions",
-    "description": "Get parking sessions for the authenticated user, or all sessions for staff roles.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "status",
-        "in": "query",
-        "required": false,
-        "schema": {
-          "type": "string",
-          "enum": ["ACTIVE", "COMPLETED", "LOST_TICKET", "OVERDUE"]
-        },
-        "example": "ACTIVE"
-      }
-    ],
-    "responses": {
-      "200": {
-        "description": "Parking sessions retrieved successfully",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ParkingSessionListResponse"
-            }
-          }
-        }
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      }
-    }
-  }
-},
-"/v1/parking-sessions/{id}": {
-  "get": {
-    "tags": ["Parking Sessions"],
-    "summary": "Get parking session by id",
-    "description": "Get details for a specific parking session.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        },
-        "example": "cmqxsession123"
-      }
-    ],
-    "responses": {
-      "200": {
-        "description": "Parking session retrieved successfully",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ParkingSessionResponse"
-            }
-          }
-        }
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      },
-      "403": {
-        "$ref": "#/components/responses/Forbidden"
-      },
-      "404": {
-        "$ref": "#/components/responses/NotFound"
-      }
-    }
-  }
-},
-"/v1/parking-sessions/check-in": {
-  "post": {
-    "tags": ["Parking Sessions"],
-    "summary": "Check in to a parking session",
-    "description": "Create a new active parking session for a vehicle at a slot.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "requestBody": {
-      "required": true,
-      "content": {
-        "application/json": {
-          "schema": {
-            "$ref": "#/components/schemas/ParkingSessionCheckInRequest"
-          }
-        }
-      }
-    },
-    "responses": {
-      "201": {
-        "description": "Parking session checked in successfully",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ParkingSessionResponse"
-            }
-          }
-        }
-      },
-      "400": {
-        "$ref": "#/components/responses/BadRequest"
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      },
-      "404": {
-        "$ref": "#/components/responses/NotFound"
-      }
-    }
-  }
-},
-"/v1/parking-sessions/check-out": {
-  "post": {
-    "tags": ["Parking Sessions"],
-    "summary": "Check out of a parking session",
-    "description": "Complete an existing parking session.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "requestBody": {
-      "required": false,
-      "content": {
-        "application/json": {
-          "schema": {
-            "$ref": "#/components/schemas/ParkingSessionCheckOutRequest"
-          }
-        }
-      }
-    },
-    "responses": {
-      "200": {
-        "description": "Parking session checked out successfully",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ParkingSessionResponse"
-            }
-          }
-        }
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      },
-      "403": {
-        "$ref": "#/components/responses/Forbidden"
-      },
-      "404": {
-        "$ref": "#/components/responses/NotFound"
-      }
-    }
-  }
-}
-  },
-
   "components": {
     "schemas": {
       "Reservation": {
@@ -1403,7 +1774,12 @@
           },
           "status": {
             "type": "string",
-            "enum": ["PENDING", "CONFIRMED", "CANCELLED", "EXPIRED"]
+            "enum": [
+              "PENDING",
+              "CONFIRMED",
+              "CANCELLED",
+              "EXPIRED"
+            ]
           },
           "createdAt": {
             "type": "string",
@@ -1442,7 +1818,12 @@
             "example": "2026-06-25T12:00:00.000Z"
           }
         },
-        "required": ["vehicleId", "slotId", "startTime", "endTime"]
+        "required": [
+          "vehicleId",
+          "slotId",
+          "startTime",
+          "endTime"
+        ]
       },
       "ReservationListResponse": {
         "type": "object",
@@ -1496,7 +1877,11 @@
           },
           "status": {
             "type": "string",
-            "enum": ["OPEN", "IN_PROGRESS", "RESOLVED"]
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "RESOLVED"
+            ]
           },
           "createdAt": {
             "type": "string",
@@ -1509,7 +1894,10 @@
       },
       "FeedbackCreateRequest": {
         "type": "object",
-        "required": ["title", "content"],
+        "required": [
+          "title",
+          "content"
+        ],
         "properties": {
           "title": {
             "type": "string",
@@ -1534,7 +1922,11 @@
           },
           "status": {
             "type": "string",
-            "enum": ["OPEN", "IN_PROGRESS", "RESOLVED"]
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "RESOLVED"
+            ]
           }
         }
       },
@@ -1606,7 +1998,12 @@
           },
           "status": {
             "type": "string",
-            "enum": ["ACTIVE", "COMPLETED", "LOST_TICKET", "OVERDUE"]
+            "enum": [
+              "ACTIVE",
+              "COMPLETED",
+              "LOST_TICKET",
+              "OVERDUE"
+            ]
           },
           "totalFee": {
             "type": "number"
@@ -1631,7 +2028,10 @@
       },
       "ParkingSessionCheckInRequest": {
         "type": "object",
-        "required": ["vehicleId", "slotId"],
+        "required": [
+          "vehicleId",
+          "slotId"
+        ],
         "properties": {
           "vehicleId": {
             "type": "string",
@@ -1699,7 +2099,6 @@
           }
         }
       },
-
       "SignupRequest": {
         "type": "object",
         "properties": {
@@ -1721,9 +2120,12 @@
             "example": "Password123"
           }
         },
-        "required": ["fullName", "email", "password"]
+        "required": [
+          "fullName",
+          "email",
+          "password"
+        ]
       },
-
       "SigninRequest": {
         "type": "object",
         "properties": {
@@ -1737,9 +2139,11 @@
             "example": "Password123"
           }
         },
-        "required": ["email", "password"]
+        "required": [
+          "email",
+          "password"
+        ]
       },
-
       "User": {
         "type": "object",
         "properties": {
@@ -1784,7 +2188,6 @@
           }
         }
       },
-
       "SigninResponse": {
         "type": "object",
         "properties": {
@@ -1797,7 +2200,6 @@
           }
         }
       },
-
       "AccessTokenResponse": {
         "type": "object",
         "properties": {
@@ -1822,9 +2224,12 @@
             "example": 5
           }
         },
-        "required": ["name", "address", "totalFloors"]
+        "required": [
+          "name",
+          "address",
+          "totalFloors"
+        ]
       },
-
       "Building": {
         "type": "object",
         "properties": {
@@ -1877,7 +2282,6 @@
           }
         }
       },
-
       "ChangePasswordRequest": {
         "type": "object",
         "properties": {
@@ -1890,258 +2294,340 @@
             "example": "NewPassword123"
           }
         },
-        "required": ["currentPassword", "newPassword"]
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ]
       },
       "Vehicle": {
-  "type": "object",
-  "properties": {
-    "id": {
-      "type": "string",
-      "example": "cmqxvehicle123"
-    },
-    "ownerId": {
-      "type": "string",
-      "example": "cmqxuser123"
-    },
-    "licensePlate": {
-      "type": "string",
-      "example": "59A1-12345"
-    },
-    "vehicleType": {
-      "type": "string",
-      "enum": ["MOTORBIKE", "CAR", "BICYCLE", "ELECTRIC_BIKE"],
-      "example": "MOTORBIKE"
-    },
-    "brand": {
-      "type": "string",
-      "example": "Honda"
-    },
-    "color": {
-      "type": "string",
-      "example": "Black"
-    },
-    "createdAt": {
-      "type": "string",
-      "format": "date-time",
-      "example": "2026-06-16T10:00:00.000Z"
-    },
-    "owner": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "example": "cmqxuser123"
-        },
-        "fullName": {
-          "type": "string",
-          "example": "Tran Minh Quan"
-        },
-        "email": {
-          "type": "string",
-          "example": "quan001@test.com"
-        },
-        "phone": {
-          "type": "string",
-          "example": "0987654321"
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "cmqxvehicle123"
+          },
+          "ownerId": {
+            "type": "string",
+            "example": "cmqxuser123"
+          },
+          "licensePlate": {
+            "type": "string",
+            "example": "59A1-12345"
+          },
+          "vehicleType": {
+            "type": "string",
+            "enum": [
+              "MOTORBIKE",
+              "CAR",
+              "BICYCLE",
+              "ELECTRIC_BIKE"
+            ],
+            "example": "MOTORBIKE"
+          },
+          "brand": {
+            "type": "string",
+            "example": "Honda"
+          },
+          "color": {
+            "type": "string",
+            "example": "Black"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-06-16T10:00:00.000Z"
+          },
+          "owner": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "cmqxuser123"
+              },
+              "fullName": {
+                "type": "string",
+                "example": "Tran Minh Quan"
+              },
+              "email": {
+                "type": "string",
+                "example": "quan001@test.com"
+              },
+              "phone": {
+                "type": "string",
+                "example": "0987654321"
+              }
+            }
+          }
         }
-      }
-    }
-  }
-},
-"CreateVehicleRequest": {
-  "type": "object",
-  "required": ["licensePlate", "vehicleType"],
-  "properties": {
-    "ownerId": {
-      "type": "string",
-      "description": "Optional. Staff/Admin can create vehicle for another user.",
-      "example": "cmqxuser123"
-    },
-    "licensePlate": {
-      "type": "string",
-      "example": "59A1-12345"
-    },
-    "vehicleType": {
-      "type": "string",
-      "enum": ["MOTORBIKE", "CAR", "BICYCLE", "ELECTRIC_BIKE"],
-      "example": "MOTORBIKE"
-    },
-    "brand": {
-      "type": "string",
-      "example": "Honda"
-    },
-    "color": {
-      "type": "string",
-      "example": "Black"
-    }
-  }
-},
-"UpdateVehicleRequest": {
-  "type": "object",
-  "properties": {
-    "licensePlate": {
-      "type": "string",
-      "example": "59A1-67890"
-    },
-    "vehicleType": {
-      "type": "string",
-      "enum": ["MOTORBIKE", "CAR", "BICYCLE", "ELECTRIC_BIKE"],
-      "example": "MOTORBIKE"
-    },
-    "brand": {
-      "type": "string",
-      "example": "Yamaha"
-    },
-    "color": {
-      "type": "string",
-      "example": "Red"
-    }
-  }
-},
-"VehicleResponse": {
-  "type": "object",
-  "properties": {
-    "success": {
-      "type": "boolean",
-      "example": true
-    },
-    "message": {
-      "type": "string",
-      "example": "Tạo phương tiện thành công"
-    },
-    "data": {
-      "$ref": "#/components/schemas/Vehicle"
-    }
-  }
-},
-"VehicleListResponse": {
-  "type": "object",
-  "properties": {
-    "success": {
-      "type": "boolean",
-      "example": true
-    },
-    "data": {
-      "type": "array",
-      "items": {
-        "$ref": "#/components/schemas/Vehicle"
-      }
-    }
-  }
-},
-"Slot": {
-  "type": "object",
-  "properties": {
-    "id": {
-      "type": "string",
-      "example": "cmqxslot123"
-    },
-    "zoneId": {
-      "type": "string",
-      "example": "cmqxzone123"
-    },
-    "slotCode": {
-      "type": "string",
-      "example": "A1-001"
-    },
-    "vehicleType": {
-      "type": "string",
-      "enum": ["MOTORBIKE", "CAR", "BICYCLE", "ELECTRIC_BIKE"],
-      "example": "MOTORBIKE"
-    },
-    "status": {
-      "type": "string",
-      "enum": ["AVAILABLE", "OCCUPIED", "RESERVED", "MAINTENANCE", "BLOCKED"],
-      "example": "AVAILABLE"
-    },
-    "isActive": {
-      "type": "boolean",
-      "example": true
-    },
-    "createdAt": {
-      "type": "string",
-      "format": "date-time",
-      "example": "2026-06-16T10:00:00.000Z"
-    },
-    "zone": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "example": "cmqxzone123"
-        },
-        "name": {
-          "type": "string",
-          "example": "Zone A"
-        },
-        "floor": {
-          "type": "object",
-          "properties": {
-            "id": {
-              "type": "string",
-              "example": "cmqxfloor123"
-            },
-            "floorNumber": {
-              "type": "integer",
-              "example": 1
-            },
-            "vehicleType": {
-              "type": "string",
-              "enum": ["MOTORBIKE", "CAR", "BICYCLE", "ELECTRIC_BIKE"],
-              "example": "MOTORBIKE"
-            },
-            "building": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "example": "cmqxbuilding123"
-                },
-                "name": {
-                  "type": "string",
-                  "example": "Building A"
-                },
-                "address": {
-                  "type": "string",
-                  "example": "FPT University HCMC"
+      },
+      "CreateVehicleRequest": {
+        "type": "object",
+        "required": [
+          "licensePlate",
+          "vehicleType"
+        ],
+        "properties": {
+          "ownerId": {
+            "type": "string",
+            "description": "Optional. Staff/Admin can create vehicle for another user.",
+            "example": "cmqxuser123"
+          },
+          "licensePlate": {
+            "type": "string",
+            "example": "59A1-12345"
+          },
+          "vehicleType": {
+            "type": "string",
+            "enum": [
+              "MOTORBIKE",
+              "CAR",
+              "BICYCLE",
+              "ELECTRIC_BIKE"
+            ],
+            "example": "MOTORBIKE"
+          },
+          "brand": {
+            "type": "string",
+            "example": "Honda"
+          },
+          "color": {
+            "type": "string",
+            "example": "Black"
+          }
+        }
+      },
+      "UpdateVehicleRequest": {
+        "type": "object",
+        "properties": {
+          "licensePlate": {
+            "type": "string",
+            "example": "59A1-67890"
+          },
+          "vehicleType": {
+            "type": "string",
+            "enum": [
+              "MOTORBIKE",
+              "CAR",
+              "BICYCLE",
+              "ELECTRIC_BIKE"
+            ],
+            "example": "MOTORBIKE"
+          },
+          "brand": {
+            "type": "string",
+            "example": "Yamaha"
+          },
+          "color": {
+            "type": "string",
+            "example": "Red"
+          }
+        }
+      },
+      "VehicleResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Tạo phương tiện thành công"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Vehicle"
+          }
+        }
+      },
+      "VehicleListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Vehicle"
+            }
+          }
+        }
+      },
+      "Slot": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "cmqxslot123"
+          },
+          "zoneId": {
+            "type": "string",
+            "example": "cmqxzone123"
+          },
+          "slotCode": {
+            "type": "string",
+            "example": "A1-001"
+          },
+          "vehicleType": {
+            "type": "string",
+            "enum": [
+              "MOTORBIKE",
+              "CAR",
+              "BICYCLE",
+              "ELECTRIC_BIKE"
+            ],
+            "example": "MOTORBIKE"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "OCCUPIED",
+              "RESERVED",
+              "MAINTENANCE",
+              "BLOCKED"
+            ],
+            "example": "AVAILABLE"
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-06-16T10:00:00.000Z"
+          },
+          "zone": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "cmqxzone123"
+              },
+              "name": {
+                "type": "string",
+                "example": "Zone A"
+              },
+              "floor": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "example": "cmqxfloor123"
+                  },
+                  "floorNumber": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "vehicleType": {
+                    "type": "string",
+                    "enum": [
+                      "MOTORBIKE",
+                      "CAR",
+                      "BICYCLE",
+                      "ELECTRIC_BIKE"
+                    ],
+                    "example": "MOTORBIKE"
+                  },
+                  "building": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "example": "cmqxbuilding123"
+                      },
+                      "name": {
+                        "type": "string",
+                        "example": "Building A"
+                      },
+                      "address": {
+                        "type": "string",
+                        "example": "FPT University HCMC"
+                      }
+                    }
+                  }
                 }
               }
             }
           }
         }
+      },
+      "SlotListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Slot"
+            }
+          }
+        }
+      },
+      "SlotResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/Slot"
+          }
+        }
+      },
+      "SlotManagementRequest": {
+        "type": "object",
+        "required": [
+          "zoneId",
+          "slotCode",
+          "status",
+          "isActive"
+        ],
+        "properties": {
+          "zoneId": {
+            "type": "string",
+            "example": "cmqxzone123"
+          },
+          "slotCode": {
+            "type": "string",
+            "example": "M-A1-010"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "OCCUPIED",
+              "RESERVED",
+              "MAINTENANCE",
+              "BLOCKED"
+            ],
+            "example": "AVAILABLE"
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "SlotMutationResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Slot created successfully"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Slot"
+          }
+        }
       }
-    }
-  }
-},
-"SlotListResponse": {
-  "type": "object",
-  "properties": {
-    "success": {
-      "type": "boolean",
-      "example": true
     },
-    "data": {
-      "type": "array",
-      "items": {
-        "$ref": "#/components/schemas/Slot"
-      }
-    }
-  }
-},
-"SlotResponse": {
-  "type": "object",
-  "properties": {
-    "success": {
-      "type": "boolean",
-      "example": true
-    },
-    "data": {
-      "$ref": "#/components/schemas/Slot"
-    }
-  }
-}
-    },
-
     "responses": {
       "BadRequest": {
         "description": "Bad request",
@@ -2153,7 +2639,6 @@
           }
         }
       },
-
       "Unauthorized": {
         "description": "Unauthorized",
         "content": {
@@ -2164,7 +2649,6 @@
           }
         }
       },
-
       "Forbidden": {
         "description": "Forbidden",
         "content": {
@@ -2176,27 +2660,25 @@
         }
       },
       "NotFound": {
-  "description": "Resource not found",
-  "content": {
-    "application/json": {
-      "schema": {
-        "$ref": "#/components/schemas/MessageResponse"
-      },
-      "example": {
-        "message": "Resource not found"
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/MessageResponse"
+            },
+            "example": {
+              "message": "Resource not found"
+            }
+          }
+        }
       }
-    }
-  }
-}
     },
-
     "securitySchemes": {
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT"
       },
-
       "refreshTokenCookie": {
         "type": "apiKey",
         "in": "cookie",
