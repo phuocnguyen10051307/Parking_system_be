@@ -47,6 +47,10 @@
     {
       "name": "Parking Sessions",
       "description": "Parking session endpoints"
+    },
+    {
+      "name": "Monthly Subscriptions",
+      "description": "Monthly parking subscription endpoints"
     }
   ],
   "paths": {
@@ -1741,6 +1745,264 @@
           }
         }
       }
+    },
+    "/v1/monthly-subscriptions": {
+      "get": {
+        "tags": [
+          "Monthly Subscriptions"
+        ],
+        "summary": "Get monthly subscriptions",
+        "description": "Normal users can only see their own subscriptions. Staff/Admin/Manager can filter by ownerId and vehicleId.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "ownerId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional. Used by staff/admin/manager to filter subscriptions by owner.",
+            "example": "cmqxuser123"
+          },
+          {
+            "name": "vehicleId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmqxvehicle123"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "EXPIRED",
+                "CANCELLED"
+              ]
+            },
+            "example": "ACTIVE"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Monthly subscriptions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthlySubscriptionListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Monthly Subscriptions"
+        ],
+        "summary": "Create monthly subscription",
+        "description": "Create and immediately mark a monthly parking subscription as paid for a vehicle.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMonthlySubscriptionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Monthly subscription created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthlySubscriptionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/monthly-subscriptions/{id}": {
+      "get": {
+        "tags": [
+          "Monthly Subscriptions"
+        ],
+        "summary": "Get monthly subscription by id",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmqxsubscription123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Monthly subscription retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthlySubscriptionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/monthly-subscriptions/{id}/renew": {
+      "put": {
+        "tags": [
+          "Monthly Subscriptions"
+        ],
+        "summary": "Renew monthly subscription",
+        "description": "Extend an existing monthly subscription by adding more months and updating the paid amount.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmqxsubscription123"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenewMonthlySubscriptionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Monthly subscription renewed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthlySubscriptionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/monthly-subscriptions/{id}/cancel": {
+      "put": {
+        "tags": [
+          "Monthly Subscriptions"
+        ],
+        "summary": "Cancel monthly subscription",
+        "description": "Cancel a monthly subscription so it is no longer treated as active.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "cmqxsubscription123"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelMonthlySubscriptionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Monthly subscription cancelled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthlySubscriptionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2624,6 +2886,250 @@
           },
           "data": {
             "$ref": "#/components/schemas/Slot"
+          }
+        }
+      },
+      "MonthlySubscription": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "cmqxsubscription123"
+          },
+          "userId": {
+            "type": "string",
+            "example": "cmqxuser123"
+          },
+          "vehicleId": {
+            "type": "string",
+            "example": "cmqxvehicle123"
+          },
+          "pricingPolicyId": {
+            "type": "string",
+            "nullable": true,
+            "example": "cmqxpolicy123"
+          },
+          "vehicleType": {
+            "type": "string",
+            "enum": [
+              "MOTORBIKE",
+              "CAR",
+              "BICYCLE",
+              "ELECTRIC_BIKE"
+            ],
+            "example": "CAR"
+          },
+          "durationMonths": {
+            "type": "integer",
+            "example": 3
+          },
+          "monthlyFee": {
+            "type": "number",
+            "example": 1250000
+          },
+          "totalAmount": {
+            "type": "number",
+            "example": 3750000
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-07-03T00:00:00.000Z"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-03T00:00:00.000Z"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "EXPIRED",
+              "CANCELLED"
+            ],
+            "example": "ACTIVE"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "BANKING",
+              "E_WALLET"
+            ],
+            "example": "CASH"
+          },
+          "paidAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "nullable": true,
+            "example": "Dang ky ve thang quy 3"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "cmqxuser123"
+              },
+              "fullName": {
+                "type": "string",
+                "example": "Tran Minh Quan"
+              },
+              "email": {
+                "type": "string",
+                "example": "quan001@test.com"
+              },
+              "phone": {
+                "type": "string",
+                "example": "0987654321"
+              }
+            }
+          },
+          "vehicle": {
+            "$ref": "#/components/schemas/Vehicle"
+          },
+          "pricingPolicy": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "cmqxpolicy123"
+              },
+              "name": {
+                "type": "string",
+                "example": "Apartment Car Pricing"
+              },
+              "vehicleType": {
+                "type": "string",
+                "enum": [
+                  "MOTORBIKE",
+                  "CAR",
+                  "BICYCLE",
+                  "ELECTRIC_BIKE"
+                ],
+                "example": "CAR"
+              },
+              "monthlyFee": {
+                "type": "number",
+                "example": 1250000
+              },
+              "isActive": {
+                "type": "boolean",
+                "example": true
+              }
+            }
+          }
+        }
+      },
+      "CreateMonthlySubscriptionRequest": {
+        "type": "object",
+        "required": [
+          "vehicleId"
+        ],
+        "properties": {
+          "vehicleId": {
+            "type": "string",
+            "example": "cmqxvehicle123"
+          },
+          "durationMonths": {
+            "type": "integer",
+            "example": 1,
+            "default": 1
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-07-03T00:00:00.000Z"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "BANKING",
+              "E_WALLET"
+            ],
+            "example": "CASH"
+          },
+          "note": {
+            "type": "string",
+            "example": "Dang ky ve thang"
+          }
+        }
+      },
+      "RenewMonthlySubscriptionRequest": {
+        "type": "object",
+        "properties": {
+          "durationMonths": {
+            "type": "integer",
+            "example": 1,
+            "default": 1
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "BANKING",
+              "E_WALLET"
+            ],
+            "example": "BANKING"
+          },
+          "note": {
+            "type": "string",
+            "example": "Gia han them 1 thang"
+          }
+        }
+      },
+      "CancelMonthlySubscriptionRequest": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "example": "Khach yeu cau huy goi thang"
+          }
+        }
+      },
+      "MonthlySubscriptionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Monthly subscription created successfully"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MonthlySubscription"
+          }
+        }
+      },
+      "MonthlySubscriptionListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonthlySubscription"
+            }
           }
         }
       }

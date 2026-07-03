@@ -5,6 +5,7 @@ import { cloudinary } from '../config/cloudinary.js'
 import { prisma } from '../config/prisma.js'
 import { pricingPolicyService } from './pricing-policy.service.js'
 import ApiError from '../utils/ApiError.js'
+import { compactLicensePlate, formatLicensePlate } from '../utils/license-plate.js'
 
 const STAFF_ROLES = ['ADMIN', 'MANAGER', 'STAFF']
 const VEHICLE_TYPES = ['MOTORBIKE', 'CAR', 'BICYCLE', 'ELECTRIC_BIKE']
@@ -147,11 +148,7 @@ const parkingSessionSelect = {
   },
 }
 
-const normalizeLicensePlate = (plate = '') =>
-  plate
-    .trim()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '')
+const normalizeLicensePlate = (plate = '') => compactLicensePlate(plate)
 
 const normalizePayment = (payment) => {
   if (!payment) {
@@ -173,6 +170,12 @@ const normalizeParkingSession = (session) => {
     ...session,
     totalFee: session.totalFee == null ? null : Number(session.totalFee),
     payment: normalizePayment(session.payment),
+    vehicle: session.vehicle
+      ? {
+          ...session.vehicle,
+          licensePlate: formatLicensePlate(session.vehicle.licensePlate),
+        }
+      : session.vehicle,
   }
 }
 
@@ -440,7 +443,7 @@ const checkInParkingByPlate = async (currentUser, payload, file) => {
       vehicle = await tx.vehicle.create({
         data: {
           ownerId: currentUser._id,
-          licensePlate: plate,
+          licensePlate: formatLicensePlate(plate),
           vehicleType,
         },
       })

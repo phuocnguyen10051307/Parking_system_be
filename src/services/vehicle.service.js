@@ -2,6 +2,7 @@ import { StatusCodes } from 'http-status-codes'
 
 import { prisma } from '../config/prisma.js'
 import ApiError from '../utils/ApiError.js'
+import { compactLicensePlate, formatLicensePlate } from '../utils/license-plate.js'
 
 const VEHICLE_TYPES = ['MOTORBIKE', 'CAR', 'BICYCLE', 'ELECTRIC_BIKE']
 const STAFF_ROLES = ['ADMIN', 'MANAGER', 'STAFF']
@@ -35,12 +36,31 @@ const validateVehicleType = (vehicleType) => {
   }
 }
 
-const normalizeLicensePlate = (licensePlate) => {
-  return licensePlate.trim().toUpperCase()
-}
+const normalizeLicensePlate = (licensePlate) => formatLicensePlate(licensePlate)
 
-const normalizePlateForCompare = (licensePlate) => {
-  return normalizeLicensePlate(licensePlate).replace(/[^A-Z0-9]/g, '')
+const normalizePlateForCompare = (licensePlate) => compactLicensePlate(licensePlate)
+
+const normalizeVehicleResponse = (vehicle) => ({
+  ...vehicle,
+  licensePlate: normalizeLicensePlate(vehicle.licensePlate),
+})
+
+const findVehicleByPlateConflict = async (licensePlate, excludeVehicleId = null) => {
+  const targetPlate = normalizePlateForCompare(licensePlate)
+
+  const vehicles = await prisma.vehicle.findMany({
+    select: {
+      id: true,
+      licensePlate: true,
+    },
+  })
+
+  return (
+    vehicles.find(
+      (vehicle) =>
+        vehicle.id !== excludeVehicleId && normalizePlateForCompare(vehicle.licensePlate) === targetPlate
+    ) || null
+  )
 }
 
 const getVehicles = async (currentUser, query) => {
@@ -69,10 +89,12 @@ const getVehicles = async (currentUser, query) => {
 
   if (query.licensePlate) {
     const targetPlate = normalizePlateForCompare(query.licensePlate)
-    return vehicles.filter((vehicle) => normalizePlateForCompare(vehicle.licensePlate) === targetPlate)
+    return vehicles
+      .filter((vehicle) => normalizePlateForCompare(vehicle.licensePlate) === targetPlate)
+      .map(normalizeVehicleResponse)
   }
 
-  return vehicles
+  return vehicles.map(normalizeVehicleResponse)
 }
 
 const getVehicleById = async (currentUser, vehicleId) => {
@@ -93,7 +115,7 @@ const getVehicleById = async (currentUser, vehicleId) => {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Vehicle not found')
   }
 
-  return vehicle
+  return normalizeVehicleResponse(vehicle)
 }
 
 const createVehicle = async (currentUser, vehicleData) => {
@@ -118,12 +140,7 @@ const createVehicle = async (currentUser, vehicleData) => {
   }
 
   const normalizedLicensePlate = normalizeLicensePlate(licensePlate)
-
-  const existedVehicle = await prisma.vehicle.findUnique({
-    where: {
-      licensePlate: normalizedLicensePlate,
-    },
-  })
+  const existedVehicle = await findVehicleByPlateConflict(normalizedLicensePlate)
 
   if (existedVehicle) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'License plate already exists')
@@ -140,7 +157,7 @@ const createVehicle = async (currentUser, vehicleData) => {
     select: vehicleSelect,
   })
 
-  return vehicle
+  return normalizeVehicleResponse(vehicle)
 }
 
 const updateVehicle = async (currentUser, vehicleId, vehicleData) => {
@@ -152,12 +169,7 @@ const updateVehicle = async (currentUser, vehicleId, vehicleData) => {
 
   if (licensePlate) {
     const normalizedLicensePlate = normalizeLicensePlate(licensePlate)
-
-    const existedVehicle = await prisma.vehicle.findUnique({
-      where: {
-        licensePlate: normalizedLicensePlate,
-      },
-    })
+    const existedVehicle = await findVehicleByPlateConflict(normalizedLicensePlate, vehicleId)
 
     if (existedVehicle && existedVehicle.id !== vehicleId) {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'License plate already exists')
@@ -191,7 +203,7 @@ const updateVehicle = async (currentUser, vehicleId, vehicleData) => {
     select: vehicleSelect,
   })
 
-  return updatedVehicle
+  return normalizeVehicleResponse(updatedVehicle)
 }
 
 const deleteVehicle = async (currentUser, vehicleId) => {
