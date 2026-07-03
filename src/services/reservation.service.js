@@ -2,6 +2,7 @@ import { StatusCodes } from 'http-status-codes'
 
 import { prisma } from '../config/prisma.js'
 import ApiError from '../utils/ApiError.js'
+import { formatLicensePlate } from '../utils/license-plate.js'
 
 const STAFF_ROLES = ['ADMIN', 'MANAGER', 'STAFF']
 
@@ -49,6 +50,22 @@ const reservationSelect = {
   },
 }
 
+const normalizeReservation = (reservation) => {
+  if (!reservation) {
+    return reservation
+  }
+
+  return {
+    ...reservation,
+    vehicle: reservation.vehicle
+      ? {
+          ...reservation.vehicle,
+          licensePlate: formatLicensePlate(reservation.vehicle.licensePlate),
+        }
+      : reservation.vehicle,
+  }
+}
+
 export const buildReservationCreateData = (payload, currentUserId) => {
   const { vehicleId, slotId, startTime, endTime } = payload
 
@@ -88,13 +105,15 @@ const getReservations = async (currentUser, query = {}) => {
     where.status = query.status
   }
 
-  return prisma.reservation.findMany({
+  const reservations = await prisma.reservation.findMany({
     where,
     select: reservationSelect,
     orderBy: {
       createdAt: 'desc',
     },
   })
+
+  return reservations.map(normalizeReservation)
 }
 
 const getReservationById = async (currentUser, reservationId) => {
@@ -111,7 +130,7 @@ const getReservationById = async (currentUser, reservationId) => {
     throw new ApiError(StatusCodes.FORBIDDEN, 'You do not have permission to access this reservation')
   }
 
-  return reservation
+  return normalizeReservation(reservation)
 }
 
 const createReservation = async (currentUser, payload) => {
@@ -160,11 +179,12 @@ const createReservation = async (currentUser, payload) => {
   }
 
   const reservationData = buildReservationCreateData(payload, currentUser._id)
-
-  return prisma.reservation.create({
+  const reservation = await prisma.reservation.create({
     data: reservationData,
     select: reservationSelect,
   })
+
+  return normalizeReservation(reservation)
 }
 
 const cancelReservation = async (currentUser, reservationId) => {
@@ -178,11 +198,13 @@ const cancelReservation = async (currentUser, reservationId) => {
     return reservation
   }
 
-  return prisma.reservation.update({
+  const updatedReservation = await prisma.reservation.update({
     where: { id: reservationId },
     data: { status: 'CANCELLED' },
     select: reservationSelect,
   })
+
+  return normalizeReservation(updatedReservation)
 }
 
 export const reservationService = {

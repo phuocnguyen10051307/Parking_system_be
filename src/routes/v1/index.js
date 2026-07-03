@@ -16,6 +16,7 @@ import { adminUserRoute } from './admin-user.route.js'
 import { roleRoute } from './role.route.js'
 import { systemSettingRoute } from './system-setting.route.js'
 import { pricingPolicyRoute } from './pricing-policy.route.js'
+import { monthlySubscriptionRoute } from './monthly-subscription.route.js'
 const Router = express.Router()
 
 /** Check APIs V1 status */
@@ -41,6 +42,8 @@ Router.use('/admin/roles', roleRoute)
 Router.use('/admin/settings', systemSettingRoute)
 /** Pricing policy APIs */
 Router.use('/pricing-policies', pricingPolicyRoute)
+/** Monthly subscription APIs */
+Router.use('/monthly-subscriptions', monthlySubscriptionRoute)
 /** User APIs */
 Router.use('/users', userRoute)
 /** Vehicle APIs */
@@ -57,3 +60,4 @@ Router.use('/parking-sessions', parkingSessionRoute)
 Router.use('/parking', parkingRoute)
 
 export const APIs_V1 = Router
+
