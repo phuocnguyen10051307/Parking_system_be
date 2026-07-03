@@ -15,6 +15,7 @@ import { zoneRoute } from './zone.route.js'
 import { adminUserRoute } from './admin-user.route.js'
 import { roleRoute } from './role.route.js'
 import { systemSettingRoute } from './system-setting.route.js'
+import { pricingPolicyRoute } from './pricing-policy.route.js'
 const Router = express.Router()
 
 /** Check APIs V1 status */
@@ -38,6 +39,8 @@ Router.use('/admin/users', adminUserRoute)
 Router.use('/admin/roles', roleRoute)
 /** Admin system setting APIs */
 Router.use('/admin/settings', systemSettingRoute)
+/** Pricing policy APIs */
+Router.use('/pricing-policies', pricingPolicyRoute)
 /** User APIs */
 Router.use('/users', userRoute)
 /** Vehicle APIs */

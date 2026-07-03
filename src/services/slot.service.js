@@ -304,3 +304,4 @@ export const slotService = {
   getSlotById,
   updateSlot,
 }
+
