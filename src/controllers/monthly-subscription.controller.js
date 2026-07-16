@@ -12,6 +12,18 @@ const getMonthlySubscriptions = asyncHandler(async (req, res) => {
   })
 })
 
+const getMyMonthlySubscriptions = asyncHandler(async (req, res) => {
+  const subscriptions = await monthlySubscriptionService.getMonthlySubscriptions(req.user, {
+    ...req.query,
+    ownerId: req.user._id,
+  })
+
+  res.status(StatusCodes.OK).json({
+    success: true,
+    data: subscriptions,
+  })
+})
+
 const getMonthlySubscriptionById = asyncHandler(async (req, res) => {
   const subscription = await monthlySubscriptionService.getMonthlySubscriptionById(req.user, req.params.id)
 
@@ -53,6 +65,7 @@ const cancelMonthlySubscription = asyncHandler(async (req, res) => {
 
 export const monthlySubscriptionController = {
   getMonthlySubscriptions,
+  getMyMonthlySubscriptions,
   getMonthlySubscriptionById,
   createMonthlySubscription,
   renewMonthlySubscription,

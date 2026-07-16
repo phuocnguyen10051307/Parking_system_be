@@ -7,7 +7,7 @@ import { formatLicensePlate } from '../utils/license-plate.js'
 
 const STAFF_ROLES = ['ADMIN', 'MANAGER', 'STAFF']
 const PAYMENT_METHODS = ['CASH', 'BANKING', 'E_WALLET']
-const SUBSCRIPTION_STATUSES = ['ACTIVE', 'EXPIRED', 'CANCELLED']
+const SUBSCRIPTION_STATUSES = ['PENDING', 'ACTIVE', 'EXPIRED', 'CANCELLED']
 
 const monthlySubscriptionSelect = {
   id: true,
@@ -64,6 +64,26 @@ const addMonths = (date, months) => {
   return nextDate
 }
 
+const getDisplaySubscriptionStatus = (subscription, now = new Date()) => {
+  if (!subscription) {
+    return subscription
+  }
+
+  if (subscription.status === 'CANCELLED') {
+    return 'CANCELLED'
+  }
+
+  if (subscription.endDate <= now) {
+    return 'EXPIRED'
+  }
+
+  if (subscription.startDate > now) {
+    return 'PENDING'
+  }
+
+  return 'ACTIVE'
+}
+
 const normalizeMonthlySubscription = (subscription) => {
   if (!subscription) {
     return subscription
@@ -71,8 +91,11 @@ const normalizeMonthlySubscription = (subscription) => {
 
   return {
     ...subscription,
+    planName: '1 Month',
     monthlyFee: toNumber(subscription.monthlyFee),
     totalAmount: toNumber(subscription.totalAmount),
+    price: toNumber(subscription.totalAmount),
+    status: getDisplaySubscriptionStatus(subscription),
     vehicle: subscription.vehicle
       ? {
           ...subscription.vehicle,
@@ -98,7 +121,7 @@ const validatePaymentMethod = (paymentMethod = 'CASH') => {
 
 const validateSubscriptionStatus = (status) => {
   if (status && !SUBSCRIPTION_STATUSES.includes(status)) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid status. Allowed values: ACTIVE, EXPIRED, CANCELLED')
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid status. Allowed values: PENDING, ACTIVE, EXPIRED, CANCELLED')
   }
 }
 
@@ -120,20 +143,6 @@ const validateDate = (value, fieldName) => {
   }
 
   return date
-}
-
-const syncExpiredSubscriptions = async (client = prisma) => {
-  await client.monthlySubscription.updateMany({
-    where: {
-      status: 'ACTIVE',
-      endDate: {
-        lte: new Date(),
-      },
-    },
-    data: {
-      status: 'EXPIRED',
-    },
-  })
 }
 
 const getVehicleForSubscription = async (currentUser, vehicleId) => {
@@ -167,8 +176,6 @@ const getVehicleForSubscription = async (currentUser, vehicleId) => {
 }
 
 const getAccessibleMonthlySubscription = async (currentUser, subscriptionId) => {
-  await syncExpiredSubscriptions()
-
   const subscription = await prisma.monthlySubscription.findUnique({
     where: { id: subscriptionId },
     select: monthlySubscriptionSelect,
@@ -189,7 +196,9 @@ const findActiveMonthlySubscription = async (client, vehicleId, targetDate = new
   return client.monthlySubscription.findFirst({
     where: {
       vehicleId,
-      status: 'ACTIVE',
+      status: {
+        not: 'CANCELLED',
+      },
       startDate: {
         lte: targetDate,
       },
@@ -208,7 +217,9 @@ const findOverlappingMonthlySubscription = async (client, vehicleId, startDate, 
   return client.monthlySubscription.findFirst({
     where: {
       vehicleId,
-      status: 'ACTIVE',
+      status: {
+        not: 'CANCELLED',
+      },
       startDate: {
         lt: endDate,
       },
@@ -236,7 +247,6 @@ const hasActiveMonthlySubscription = async (client, vehicleId, targetDate = new 
 }
 
 const getMonthlySubscriptions = async (currentUser, query = {}) => {
-  await syncExpiredSubscriptions()
   validateSubscriptionStatus(query.status)
 
   const where = {}
@@ -253,17 +263,19 @@ const getMonthlySubscriptions = async (currentUser, query = {}) => {
     where.vehicleId = query.vehicleId
   }
 
-  if (query.status) {
-    where.status = query.status
-  }
-
   const subscriptions = await prisma.monthlySubscription.findMany({
     where,
     select: monthlySubscriptionSelect,
-    orderBy: [{ status: 'asc' }, { endDate: 'desc' }, { createdAt: 'desc' }],
+    orderBy: [{ startDate: 'desc' }, { createdAt: 'desc' }],
   })
 
-  return subscriptions.map(normalizeMonthlySubscription)
+  return subscriptions.map(normalizeMonthlySubscription).filter((subscription) => {
+    if (!query.status) {
+      return true
+    }
+
+    return subscription.status === query.status
+  })
 }
 
 const getMonthlySubscriptionById = async (currentUser, subscriptionId) => {
@@ -276,8 +288,6 @@ const createMonthlySubscription = async (currentUser, payload = {}) => {
   const paymentMethod = validatePaymentMethod(payload.paymentMethod || 'CASH')
   const startDate = validateDate(payload.startDate, 'startDate')
   const vehicle = await getVehicleForSubscription(currentUser, payload.vehicleId)
-
-  await syncExpiredSubscriptions()
 
   const pricingPolicy = await pricingPolicyService.getActivePricingPolicy(vehicle.vehicleType)
   const monthlyFee = toNumber(pricingPolicy.monthlyFee)
@@ -384,5 +394,4 @@ export const monthlySubscriptionService = {
   findActiveMonthlySubscription,
   findOverlappingMonthlySubscription,
   hasActiveMonthlySubscription,
-  syncExpiredSubscriptions,
 }
