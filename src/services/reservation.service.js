@@ -5,8 +5,16 @@ import ApiError from '../utils/ApiError.js'
 import { formatLicensePlate } from '../utils/license-plate.js'
 
 const STAFF_ROLES = ['ADMIN', 'MANAGER', 'STAFF']
+const ACTIVE_RESERVATION_STATUSES = ['PENDING', 'CONFIRMED']
+const EARLY_CHECK_IN_WINDOW_HOURS = 4
+const LATE_CHECK_IN_GRACE_HOURS = 2
+const RESERVATION_BOOKING_WINDOW_DAYS = 5
+const HOUR_IN_MS = 60 * 60 * 1000
+const DAY_IN_MS = 24 * HOUR_IN_MS
 
 const isStaffRole = (role) => STAFF_ROLES.includes(role)
+const addHours = (date, hours) => new Date(date.getTime() + hours * HOUR_IN_MS)
+const addDays = (date, days) => new Date(date.getTime() + days * DAY_IN_MS)
 
 const reservationSelect = {
   id: true,
@@ -79,6 +87,93 @@ export const buildReservationCreateData = (payload, currentUserId) => {
   }
 }
 
+export const getReservationBookingWindow = (baseTime = new Date()) => ({
+  minStartTime: baseTime,
+  maxEndTime: addDays(baseTime, RESERVATION_BOOKING_WINDOW_DAYS),
+})
+
+export const getReservationCheckInWindow = (reservationOrStartTime) => {
+  const startTime = reservationOrStartTime instanceof Date
+    ? reservationOrStartTime
+    : new Date(reservationOrStartTime?.startTime ?? reservationOrStartTime)
+
+  return {
+    opensAt: addHours(startTime, -EARLY_CHECK_IN_WINDOW_HOURS),
+    expiresAt: addHours(startTime, LATE_CHECK_IN_GRACE_HOURS),
+  }
+}
+
+export const canCheckInWithReservation = (reservation, checkInTime = new Date()) => {
+  const { opensAt, expiresAt } = getReservationCheckInWindow(reservation)
+  return checkInTime >= opensAt && checkInTime <= expiresAt
+}
+
+export const cleanupExpiredReservations = async (client = prisma, now = new Date()) => {
+  const expiredStartTime = addHours(now, -LATE_CHECK_IN_GRACE_HOURS)
+
+  return client.reservation.deleteMany({
+    where: {
+      status: {
+        in: ACTIVE_RESERVATION_STATUSES,
+      },
+      startTime: {
+        lt: expiredStartTime,
+      },
+    },
+  })
+}
+
+export const findReservationForCheckIn = async (client, { slotId, vehicleId, checkInTime = new Date() }) => {
+  await cleanupExpiredReservations(client, checkInTime)
+
+  const reservation = await client.reservation.findFirst({
+    where: {
+      slotId,
+      status: {
+        in: ACTIVE_RESERVATION_STATUSES,
+      },
+    },
+    orderBy: {
+      startTime: 'asc',
+    },
+  })
+
+  if (!reservation) {
+    return null
+  }
+
+  if (reservation.vehicleId !== vehicleId) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Parking slot is reserved for another vehicle')
+  }
+
+  const { opensAt } = getReservationCheckInWindow(reservation)
+
+  if (checkInTime < opensAt) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      `This reservation can only be checked in within ${EARLY_CHECK_IN_WINDOW_HOURS} hours before the start time`
+    )
+  }
+
+  if (!canCheckInWithReservation(reservation, checkInTime)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'This reservation is no longer valid for check-in')
+  }
+
+  return reservation
+}
+
+export const removeReservationAfterCheckIn = async (client, reservationId) => {
+  if (!reservationId) {
+    return null
+  }
+
+  return client.reservation.delete({
+    where: {
+      id: reservationId,
+    },
+  })
+}
+
 export const canCancelReservation = (currentUser, reservation, role) => {
   const reservationOwnerId = reservation?.userId || reservation?.id
   const actorId = currentUser?.userId || currentUser?._id
@@ -91,6 +186,8 @@ export const canCancelReservation = (currentUser, reservation, role) => {
 }
 
 const getReservations = async (currentUser, query = {}) => {
+  await cleanupExpiredReservations(prisma)
+
   const where = {}
 
   if (!isStaffRole(currentUser.role)) {
@@ -117,6 +214,8 @@ const getReservations = async (currentUser, query = {}) => {
 }
 
 const getReservationById = async (currentUser, reservationId) => {
+  await cleanupExpiredReservations(prisma)
+
   const reservation = await prisma.reservation.findUnique({
     where: { id: reservationId },
     select: reservationSelect,
@@ -142,6 +241,8 @@ const createReservation = async (currentUser, payload) => {
 
   const start = new Date(startTime)
   const end = new Date(endTime)
+  const now = new Date()
+  const { maxEndTime } = getReservationBookingWindow(now)
 
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'startTime and endTime must be valid dates')
@@ -150,6 +251,23 @@ const createReservation = async (currentUser, payload) => {
   if (start >= end) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'endTime must be later than startTime')
   }
+
+  if (start <= now) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'startTime must be later than the current time')
+  }
+
+  if (end <= now) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'endTime must be later than the current time')
+  }
+
+  if (start > maxEndTime || end > maxEndTime) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      `Reservations can only be created within ${RESERVATION_BOOKING_WINDOW_DAYS} days from now`
+    )
+  }
+
+  await cleanupExpiredReservations(prisma, now)
 
   const vehicle = await prisma.vehicle.findFirst({
     where: {
@@ -176,6 +294,44 @@ const createReservation = async (currentUser, payload) => {
 
   if (slot.status !== 'AVAILABLE') {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Parking slot is not available')
+  }
+
+  const [activeSession, conflictingReservation] = await Promise.all([
+    prisma.parkingSession.findFirst({
+      where: {
+        status: 'ACTIVE',
+        OR: [{ vehicleId }, { slotId }],
+      },
+      select: { id: true },
+    }),
+    prisma.reservation.findFirst({
+      where: {
+        status: {
+          in: ACTIVE_RESERVATION_STATUSES,
+        },
+        OR: [
+          {
+            slotId,
+            startTime: { lt: end },
+            endTime: { gt: start },
+          },
+          {
+            vehicleId,
+            startTime: { lt: end },
+            endTime: { gt: start },
+          },
+        ],
+      },
+      select: { id: true },
+    }),
+  ])
+
+  if (activeSession) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'The selected vehicle or slot already has an active parking session')
+  }
+
+  if (conflictingReservation) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'The selected vehicle or slot already has a conflicting reservation')
   }
 
   const reservationData = buildReservationCreateData(payload, currentUser._id)
@@ -213,5 +369,11 @@ export const reservationService = {
   createReservation,
   cancelReservation,
   buildReservationCreateData,
+  getReservationBookingWindow,
+  getReservationCheckInWindow,
+  canCheckInWithReservation,
+  cleanupExpiredReservations,
+  findReservationForCheckIn,
+  removeReservationAfterCheckIn,
   canCancelReservation,
 }

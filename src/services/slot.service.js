@@ -5,6 +5,7 @@ import ApiError from '../utils/ApiError.js'
 
 const VEHICLE_TYPES = ['MOTORBIKE', 'CAR', 'BICYCLE', 'ELECTRIC_BIKE']
 const SLOT_STATUSES = ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'MAINTENANCE', 'BLOCKED']
+const ACTIVE_RESERVATION_STATUSES = ['PENDING', 'CONFIRMED']
 
 const slotSelect = {
   id: true,
@@ -76,6 +77,29 @@ const parseIsActiveQuery = (isActive) => {
   throw new ApiError(StatusCodes.BAD_REQUEST, 'isActive query must be true or false')
 }
 
+const parseReservationWindow = (startTime, endTime) => {
+  if (!startTime && !endTime) {
+    return null
+  }
+
+  if (!startTime || !endTime) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'startTime and endTime must be provided together')
+  }
+
+  const start = new Date(startTime)
+  const end = new Date(endTime)
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'startTime and endTime must be valid dates')
+  }
+
+  if (start >= end) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'endTime must be later than startTime')
+  }
+
+  return { start, end }
+}
+
 const getZoneForSlot = async (zoneId) => {
   const zone = await prisma.zone.findUnique({
     where: { id: zoneId },
@@ -125,14 +149,26 @@ const getSlots = async (query) => {
 }
 
 const getAvailableSlots = async (query) => {
-  const { vehicleType } = query
+  const { vehicleType, startTime, endTime } = query
 
   validateVehicleType(vehicleType)
 
+  const reservationWindow = parseReservationWindow(startTime, endTime)
   const where = {
     isActive: true,
     status: 'AVAILABLE',
     ...(vehicleType && { vehicleType }),
+    ...(reservationWindow && {
+      reservations: {
+        none: {
+          status: {
+            in: ACTIVE_RESERVATION_STATUSES,
+          },
+          startTime: { lt: reservationWindow.end },
+          endTime: { gt: reservationWindow.start },
+        },
+      },
+    }),
   }
 
   const slots = await prisma.parkingSlot.findMany({
@@ -304,4 +340,3 @@ export const slotService = {
   getSlotById,
   updateSlot,
 }
-

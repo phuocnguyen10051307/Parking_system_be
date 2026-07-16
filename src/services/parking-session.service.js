@@ -4,6 +4,7 @@ import streamifier from 'streamifier'
 import { cloudinary } from '../config/cloudinary.js'
 import { prisma } from '../config/prisma.js'
 import { pricingPolicyService } from './pricing-policy.service.js'
+import { cleanupExpiredReservations, findReservationForCheckIn, removeReservationAfterCheckIn } from './reservation.service.js'
 import ApiError from '../utils/ApiError.js'
 import { compactLicensePlate, formatLicensePlate } from '../utils/license-plate.js'
 
@@ -105,6 +106,7 @@ const parkingSessionSelect = {
   vehicle: {
     select: {
       id: true,
+      ownerId: true,
       licensePlate: true,
       vehicleType: true,
       brand: true,
@@ -270,20 +272,24 @@ export const buildParkingSessionCheckOutData = (payload, uploadedImage, totalFee
 
 export const canViewParkingSession = (currentUser, session, role) => {
   const actorId = currentUser?._id || currentUser?.userId
-  const ownerId = session?.userId
+  const sessionUserId = session?.userId
+  const vehicleOwnerId = session?.vehicle?.ownerId
 
   if (isStaffRole(role)) {
     return true
   }
 
-  return Boolean(actorId && ownerId && actorId === ownerId)
+  return Boolean(actorId && (actorId === sessionUserId || actorId === vehicleOwnerId))
 }
 
 const getParkingSessions = async (currentUser, query = {}) => {
   const where = {}
 
   if (!isStaffRole(currentUser.role)) {
-    where.userId = currentUser._id
+    where.OR = [
+      { userId: currentUser._id },
+      { vehicle: { ownerId: currentUser._id } },
+    ]
   }
 
   if (query.status) {
@@ -390,9 +396,15 @@ const checkInParkingSession = async (currentUser, payload) => {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Vehicle not found')
   }
 
+  await cleanupExpiredReservations(prisma)
   await assertVehicleCanCheckIn(prisma, vehicle.id)
   await checkSlotAvailable(slotId)
 
+  const matchedReservation = await findReservationForCheckIn(prisma, {
+    slotId,
+    vehicleId: vehicle.id,
+    checkInTime: new Date(),
+  })
   const sessionData = buildParkingSessionCheckInData(payload, currentUser._id)
 
   return prisma.$transaction(async (tx) => {
@@ -406,6 +418,10 @@ const checkInParkingSession = async (currentUser, payload) => {
       data: { status: 'OCCUPIED' },
     })
 
+    if (matchedReservation) {
+      await removeReservationAfterCheckIn(tx, matchedReservation.id)
+    }
+
     return normalizeParkingSession(session)
   })
 }
@@ -416,7 +432,7 @@ const checkInParkingByPlate = async (currentUser, payload, file) => {
   }
 
   const plate = normalizeLicensePlate(payload.plate)
-  const { slotId, entryGate = 'B1' } = payload
+  const { slotId, entryGate = 'B1', vehicleId } = payload
   const vehicleType = 'CAR'
 
   if (!plate) {
@@ -429,14 +445,37 @@ const checkInParkingByPlate = async (currentUser, payload, file) => {
 
   validateVehicleType(vehicleType)
 
-  const existingVehicle = await findVehicleByNormalizedPlate(prisma, plate)
+  const existingVehicle = vehicleId
+    ? await prisma.vehicle.findUnique({ where: { id: vehicleId } })
+    : await findVehicleByNormalizedPlate(prisma, plate)
+
+  if (existingVehicle && normalizeLicensePlate(existingVehicle.licensePlate) !== plate) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Selected vehicle does not match the detected plate')
+  }
+
+  await cleanupExpiredReservations(prisma)
   await assertVehicleCanCheckIn(prisma, existingVehicle?.id)
   await checkSlotAvailable(slotId)
+
+  if (existingVehicle) {
+    await findReservationForCheckIn(prisma, {
+      slotId,
+      vehicleId: existingVehicle.id,
+      checkInTime: new Date(),
+    })
+  }
 
   const uploadedImage = await uploadEntryImage(file)
 
   return prisma.$transaction(async (tx) => {
-    let vehicle = await findVehicleByNormalizedPlate(tx, plate)
+    let vehicle = vehicleId
+      ? await tx.vehicle.findUnique({ where: { id: vehicleId } })
+      : await findVehicleByNormalizedPlate(tx, plate)
+
+    if (vehicle && normalizeLicensePlate(vehicle.licensePlate) !== plate) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Selected vehicle does not match the detected plate')
+    }
+
     await assertVehicleCanCheckIn(tx, vehicle?.id)
 
     if (!vehicle) {
@@ -449,10 +488,16 @@ const checkInParkingByPlate = async (currentUser, payload, file) => {
       })
     }
 
+    const matchedReservation = await findReservationForCheckIn(tx, {
+      slotId,
+      vehicleId: vehicle.id,
+      checkInTime: new Date(),
+    })
+
     const session = await tx.parkingSession.create({
       data: {
         vehicleId: vehicle.id,
-        userId: currentUser._id,
+        userId: vehicle.ownerId,
         slotId,
         entryTime: new Date(),
         entryGate,
@@ -467,6 +512,10 @@ const checkInParkingByPlate = async (currentUser, payload, file) => {
       where: { id: slotId },
       data: { status: 'OCCUPIED' },
     })
+
+    if (matchedReservation) {
+      await removeReservationAfterCheckIn(tx, matchedReservation.id)
+    }
 
     return normalizeParkingSession(session)
   })
@@ -540,4 +589,5 @@ export const parkingSessionService = {
   buildParkingSessionCheckOutData,
   calculateParkingFee,
   canViewParkingSession,
+  assertVehicleCanCheckIn,
 }
