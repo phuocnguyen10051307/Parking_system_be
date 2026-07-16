@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import bcrypt from 'bcrypt'
 import { StatusCodes } from 'http-status-codes'
 import ms from 'ms'
@@ -6,18 +7,26 @@ import { env } from '../config/environment.js'
 import { prisma } from '../config/prisma.js'
 import { JwtProvider } from '../providers/jwt.provider.js'
 import ApiError from '../utils/ApiError.js'
-import { authController } from '../controllers/auth.controller.js'
+import { mailService } from './mail.service.js'
 
-const signup = async (userData) => {
-  const { fullName, email, phone, password } = userData
+const normalizeEmail = (email) => email.trim().toLowerCase()
 
-  if (!fullName || !email || !password) {
+const getOtpExpiresInMinutes = () => {
+  const expiresInMinutes = Number(env.OTP_EXPIRES_IN_MINUTES || 5)
+
+  if (!Number.isInteger(expiresInMinutes) || expiresInMinutes <= 0) {
     throw new ApiError(
-      StatusCodes.BAD_REQUEST,
-      'Full name, email and password are required'
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Invalid OTP expiration'
     )
   }
 
+  return expiresInMinutes
+}
+
+const generateOtpCode = () => String(crypto.randomInt(100000, 1000000))
+
+const ensureSignupAvailable = async ({ email, phone }) => {
   const existedEmail = await prisma.user.findUnique({
     where: { email },
   })
@@ -41,16 +50,146 @@ const signup = async (userData) => {
       )
     }
   }
+}
 
-  const passwordHash = await bcrypt.hash(password, 10)
+const requestSignupOtp = async (userData) => {
+  const { fullName, phone, password } = userData
+  const email = normalizeEmail(userData.email)
 
-  const createdUser = await prisma.user.create({
+  if (!fullName || !email || !password) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'Full name, email and password are required'
+    )
+  }
+
+  await ensureSignupAvailable({ email, phone })
+
+  const expiresInMinutes = getOtpExpiresInMinutes()
+  const otpCode = generateOtpCode()
+  const [passwordHash, otpHash] = await Promise.all([
+    bcrypt.hash(password, 10),
+    bcrypt.hash(otpCode, 10),
+  ])
+
+  await prisma.registrationOtp.deleteMany({
+    where: {
+      email,
+      consumedAt: null,
+    },
+  })
+
+  await prisma.registrationOtp.create({
     data: {
       fullName,
       email,
       phone,
       passwordHash,
+      otpHash,
+      expiresAt: new Date(Date.now() + expiresInMinutes * 60 * 1000),
     },
+  })
+
+  await mailService.sendSignupOtp({
+    to: email,
+    fullName,
+    otpCode,
+    expiresInMinutes,
+  })
+
+  return {
+    success: true,
+    message: 'OTP has been sent to your email',
+    expiresInMinutes,
+  }
+}
+
+const signup = async (userData) => {
+  const email = normalizeEmail(userData.email)
+  const otpCode = userData.otpCode
+
+  if (!email || !otpCode) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'Email and OTP code are required'
+    )
+  }
+
+  const otpRecord = await prisma.registrationOtp.findFirst({
+    where: {
+      email,
+      consumedAt: null,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  })
+
+  if (!otpRecord) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'Please request a new OTP code'
+    )
+  }
+
+  if (otpRecord.expiresAt < new Date()) {
+    await prisma.registrationOtp.delete({
+      where: { id: otpRecord.id },
+    })
+
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'OTP code has expired'
+    )
+  }
+
+  if (otpRecord.attempts >= 5) {
+    throw new ApiError(
+      StatusCodes.TOO_MANY_REQUESTS,
+      'Too many failed OTP attempts. Please request a new code'
+    )
+  }
+
+  const isOtpMatch = await bcrypt.compare(otpCode, otpRecord.otpHash)
+
+  if (!isOtpMatch) {
+    await prisma.registrationOtp.update({
+      where: { id: otpRecord.id },
+      data: { attempts: { increment: 1 } },
+    })
+
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'Invalid OTP code'
+    )
+  }
+
+  await ensureSignupAvailable({ email, phone: otpRecord.phone })
+
+  const createdUser = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: {
+        fullName: otpRecord.fullName,
+        email: otpRecord.email,
+        phone: otpRecord.phone,
+        passwordHash: otpRecord.passwordHash,
+      },
+    })
+
+    await tx.registrationOtp.update({
+      where: { id: otpRecord.id },
+      data: { consumedAt: new Date() },
+    })
+
+    await tx.registrationOtp.deleteMany({
+      where: {
+        email,
+        consumedAt: null,
+        id: { not: otpRecord.id },
+      },
+    })
+
+    return user
   })
 
   return {
@@ -67,7 +206,8 @@ const signup = async (userData) => {
 }
 
 const signin = async (userData) => {
-  const { email, password } = userData
+  const { password } = userData
+  const email = normalizeEmail(userData.email)
 
   if (!email || !password) {
     throw new ApiError(
@@ -124,31 +264,45 @@ const signin = async (userData) => {
     env.JWT_REFRESH_EXPIRATION
   )
 
+  const accessTokenMaxAge = ms(
+    env.JWT_ACCESS_EXPIRATION
+  )
   const refreshTokenMaxAge = ms(
     env.JWT_REFRESH_EXPIRATION
   )
 
-  if (!refreshTokenMaxAge) {
+  if (!accessTokenMaxAge || !refreshTokenMaxAge) {
     throw new ApiError(
       StatusCodes.INTERNAL_SERVER_ERROR,
-      'Invalid refresh token expiration'
+      'Invalid token expiration'
     )
   }
 
-  // Lưu session ở đây nếu schema Session tồn tại
+  await prisma.session.create({
+    data: {
+      userId: user.id,
+      refreshToken,
+      expiresAt: new Date(Date.now() + refreshTokenMaxAge),
+    },
+  })
 
   return {
     accessToken,
+    accessTokenMaxAge,
     refreshToken,
     refreshTokenMaxAge,
     user: {
-      id: user.id,
-      fullName: user.fullName,
-      email: user.email,
+      _id: user.id,
       phone: user.phone,
+      email: user.email,
+      displayName: user.fullName,
+      role: user.role || 'USER',
       avatarUrl: user.avatarUrl,
-      role: user.role,
+      avatarId: null,
+      loyaltyPoints: 0,
       isActive: user.isActive,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
     },
   }
 }
@@ -205,7 +359,6 @@ const refreshToken = async (token) => {
       'Invalid refresh token'
     )
   }
-  
 
   const user = await prisma.user.findUnique({
     where: {
@@ -232,8 +385,18 @@ const refreshToken = async (token) => {
     env.JWT_ACCESS_EXPIRATION
   )
 
+  const accessTokenMaxAge = ms(env.JWT_ACCESS_EXPIRATION)
+
+  if (!accessTokenMaxAge) {
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Invalid token expiration'
+    )
+  }
+
   return {
-    accessToken
+    accessToken,
+    accessTokenMaxAge
   }
 }
 const signout = async (refreshToken) => {
@@ -247,6 +410,7 @@ const signout = async (refreshToken) => {
 }
 
 export const authService = {
+  requestSignupOtp,
   signup,
   signin,
   signout,

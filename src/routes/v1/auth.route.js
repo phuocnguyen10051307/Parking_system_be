@@ -6,7 +6,10 @@ import { authMiddleware } from '../../middlewares/auth.middleware.js'
 
 const Router = express.Router()
 
-// Register a new user
+// Send OTP before creating a new user
+Router.post('/signup/request-otp', validate(authValidation.requestSignupOtpSchema), authController.requestSignupOtp)
+
+// Verify OTP and register a new user
 Router.post('/signup', validate(authValidation.signupSchema), authController.signup)
 
 // Login
