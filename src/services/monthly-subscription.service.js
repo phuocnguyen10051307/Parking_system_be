@@ -7,7 +7,8 @@ import { formatLicensePlate } from '../utils/license-plate.js'
 
 const STAFF_ROLES = ['ADMIN', 'MANAGER', 'STAFF']
 const PAYMENT_METHODS = ['CASH', 'BANKING', 'E_WALLET']
-const SUBSCRIPTION_STATUSES = ['PENDING', 'ACTIVE', 'EXPIRED', 'CANCELLED']
+const DISPLAY_SUBSCRIPTION_STATUSES = ['PENDING', 'ACTIVE', 'EXPIRED', 'CANCELLED']
+const DATABASE_SUBSCRIPTION_STATUSES = ['ACTIVE', 'EXPIRED', 'CANCELLED']
 
 const monthlySubscriptionSelect = {
   id: true,
@@ -120,7 +121,7 @@ const validatePaymentMethod = (paymentMethod = 'CASH') => {
 }
 
 const validateSubscriptionStatus = (status) => {
-  if (status && !SUBSCRIPTION_STATUSES.includes(status)) {
+  if (status && !DISPLAY_SUBSCRIPTION_STATUSES.includes(status)) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid status. Allowed values: PENDING, ACTIVE, EXPIRED, CANCELLED')
   }
 }
@@ -261,6 +262,10 @@ const getMonthlySubscriptions = async (currentUser, query = {}) => {
 
   if (query.vehicleId) {
     where.vehicleId = query.vehicleId
+  }
+
+  if (query.status && DATABASE_SUBSCRIPTION_STATUSES.includes(query.status)) {
+    where.status = query.status
   }
 
   const subscriptions = await prisma.monthlySubscription.findMany({
