@@ -4,11 +4,25 @@ import { prisma } from '../config/prisma.js'
 import ApiError from '../utils/ApiError.js'
 import { pricingPolicyService } from './pricing-policy.service.js'
 import { formatLicensePlate } from '../utils/license-plate.js'
+import { paymentService } from './payment.service.js'
 
 const STAFF_ROLES = ['ADMIN', 'MANAGER', 'STAFF']
 const PAYMENT_METHODS = ['CASH', 'BANKING', 'E_WALLET']
 const DISPLAY_SUBSCRIPTION_STATUSES = ['PENDING', 'ACTIVE', 'EXPIRED', 'CANCELLED']
-const DATABASE_SUBSCRIPTION_STATUSES = ['ACTIVE', 'EXPIRED', 'CANCELLED']
+const DATABASE_SUBSCRIPTION_STATUSES = ['PENDING', 'ACTIVE', 'EXPIRED', 'CANCELLED']
+
+const paymentSelect = {
+  id: true,
+  amount: true,
+  method: true,
+  provider: true,
+  orderCode: true,
+  providerPaymentId: true,
+  checkoutUrl: true,
+  status: true,
+  paidAt: true,
+  createdAt: true,
+}
 
 const monthlySubscriptionSelect = {
   id: true,
@@ -54,6 +68,9 @@ const monthlySubscriptionSelect = {
       isActive: true,
     },
   },
+  payment: {
+    select: paymentSelect,
+  },
 }
 
 const isStaffRole = (role) => STAFF_ROLES.includes(role)
@@ -65,9 +82,15 @@ const addMonths = (date, months) => {
   return nextDate
 }
 
+const normalizePayment = (payment) => paymentService.normalizePayment(payment)
+
 const getDisplaySubscriptionStatus = (subscription, now = new Date()) => {
   if (!subscription) {
     return subscription
+  }
+
+  if (subscription.status === 'PENDING') {
+    return 'PENDING'
   }
 
   if (subscription.status === 'CANCELLED') {
@@ -97,6 +120,7 @@ const normalizeMonthlySubscription = (subscription) => {
     totalAmount: toNumber(subscription.totalAmount),
     price: toNumber(subscription.totalAmount),
     status: getDisplaySubscriptionStatus(subscription),
+    payment: normalizePayment(subscription.payment),
     vehicle: subscription.vehicle
       ? {
           ...subscription.vehicle,
@@ -197,8 +221,10 @@ const findActiveMonthlySubscription = async (client, vehicleId, targetDate = new
   return client.monthlySubscription.findFirst({
     where: {
       vehicleId,
-      status: {
-        not: 'CANCELLED',
+      status: 'ACTIVE',
+      paidAt: {
+        not: null,
+        lte: targetDate,
       },
       startDate: {
         lte: targetDate,
@@ -304,7 +330,38 @@ const createMonthlySubscription = async (currentUser, payload = {}) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'This vehicle already has an active monthly subscription for that period')
   }
 
-  const subscription = await prisma.monthlySubscription.create({
+  if (paymentMethod === 'CASH') {
+    const subscription = await prisma.monthlySubscription.create({
+      data: {
+        userId: vehicle.ownerId,
+        vehicleId: vehicle.id,
+        pricingPolicyId: pricingPolicy.id,
+        vehicleType: vehicle.vehicleType,
+        durationMonths,
+        monthlyFee,
+        totalAmount,
+        startDate,
+        endDate,
+        status: 'ACTIVE',
+        paymentMethod,
+        paidAt: new Date(),
+        note: payload.note?.trim() || null,
+        payment: {
+          create: {
+            amount: totalAmount,
+            method: paymentMethod,
+            status: 'PAID',
+            paidAt: new Date(),
+          },
+        },
+      },
+      select: monthlySubscriptionSelect,
+    })
+
+    return normalizeMonthlySubscription(subscription)
+  }
+
+  const createdSubscription = await prisma.monthlySubscription.create({
     data: {
       userId: vehicle.ownerId,
       vehicleId: vehicle.id,
@@ -315,15 +372,37 @@ const createMonthlySubscription = async (currentUser, payload = {}) => {
       totalAmount,
       startDate,
       endDate,
-      status: 'ACTIVE',
+      status: 'PENDING',
       paymentMethod,
-      paidAt: new Date(),
+      paidAt: null,
       note: payload.note?.trim() || null,
     },
     select: monthlySubscriptionSelect,
   })
 
-  return normalizeMonthlySubscription(subscription)
+  try {
+    const paymentResult = await paymentService.createMonthlySubscriptionPaymentLink({
+      subscription: createdSubscription,
+      amount: totalAmount,
+      paymentMethod,
+    })
+
+    const subscription = await prisma.monthlySubscription.findUnique({
+      where: { id: createdSubscription.id },
+      select: monthlySubscriptionSelect,
+    })
+
+    return {
+      ...normalizeMonthlySubscription(subscription),
+      paymentAction: paymentResult,
+    }
+  } catch (error) {
+    await prisma.monthlySubscription.delete({
+      where: { id: createdSubscription.id },
+    })
+
+    throw error
+  }
 }
 
 const renewMonthlySubscription = async (currentUser, subscriptionId, payload = {}) => {
@@ -360,9 +439,9 @@ const renewMonthlySubscription = async (currentUser, subscriptionId, payload = {
       monthlyFee,
       totalAmount: toNumber(subscription.totalAmount) + additionalAmount,
       endDate: nextEndDate,
-      status: 'ACTIVE',
+      status: subscription.status === 'PENDING' ? 'PENDING' : 'ACTIVE',
       paymentMethod,
-      paidAt: new Date(),
+      paidAt: paymentMethod === 'CASH' ? new Date() : subscription.paidAt,
       note: payload.note?.trim() || subscription.note,
     },
     select: monthlySubscriptionSelect,
@@ -399,4 +478,5 @@ export const monthlySubscriptionService = {
   findActiveMonthlySubscription,
   findOverlappingMonthlySubscription,
   hasActiveMonthlySubscription,
+  normalizeMonthlySubscription,
 }

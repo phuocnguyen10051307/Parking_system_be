@@ -56,6 +56,7 @@ enum PaymentMethod {
 }
 
 enum MonthlySubscriptionStatus {
+  PENDING
   ACTIVE
   EXPIRED
   CANCELLED
@@ -296,6 +297,8 @@ model MonthlySubscription {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  payment Payment?
+
   @@index([userId])
   @@index([vehicleId])
   @@index([status])
@@ -363,13 +366,25 @@ model ParkingSession {
 model Payment {
   id String @id @default(cuid())
 
-  sessionId String @unique
+  sessionId String? @unique
 
-  session ParkingSession @relation(fields: [sessionId], references: [id])
+  session ParkingSession? @relation(fields: [sessionId], references: [id])
+
+  monthlySubscriptionId String? @unique
+
+  monthlySubscription MonthlySubscription? @relation(fields: [monthlySubscriptionId], references: [id])
 
   amount Decimal @db.Decimal(10, 2)
 
   method PaymentMethod
+
+  provider String?
+
+  orderCode String?
+
+  providerPaymentId String?
+
+  checkoutUrl String?
 
   status PaymentStatus @default(PENDING)
 
@@ -413,3 +428,5 @@ model AllocationHistory {
 
   createdAt DateTime @default(now())
 }
+
+

@@ -3,10 +3,12 @@ import streamifier from 'streamifier'
 
 import { cloudinary } from '../config/cloudinary.js'
 import { prisma } from '../config/prisma.js'
-import { pricingPolicyService } from './pricing-policy.service.js'
-import { cleanupExpiredReservations, findReservationForCheckIn, removeReservationAfterCheckIn } from './reservation.service.js'
 import ApiError from '../utils/ApiError.js'
 import { compactLicensePlate, formatLicensePlate } from '../utils/license-plate.js'
+import { paymentService } from './payment.service.js'
+import { pricingPolicyService } from './pricing-policy.service.js'
+import { cleanupExpiredReservations, findReservationForCheckIn, removeReservationAfterCheckIn } from './reservation.service.js'
+import { monthlySubscriptionService } from './monthly-subscription.service.js'
 
 const STAFF_ROLES = ['ADMIN', 'MANAGER', 'STAFF']
 const VEHICLE_TYPES = ['MOTORBIKE', 'CAR', 'BICYCLE', 'ELECTRIC_BIKE']
@@ -76,6 +78,19 @@ const calculateCarParkingFee = (entryTime, exitTime) => {
 
 const isStaffRole = (role) => STAFF_ROLES.includes(role)
 
+const paymentSelect = {
+  id: true,
+  amount: true,
+  method: true,
+  provider: true,
+  orderCode: true,
+  providerPaymentId: true,
+  checkoutUrl: true,
+  status: true,
+  paidAt: true,
+  createdAt: true,
+}
+
 const parkingSessionSelect = {
   id: true,
   vehicleId: true,
@@ -94,14 +109,7 @@ const parkingSessionSelect = {
   note: true,
   createdAt: true,
   payment: {
-    select: {
-      id: true,
-      amount: true,
-      method: true,
-      status: true,
-      paidAt: true,
-      createdAt: true,
-    },
+    select: paymentSelect,
   },
   vehicle: {
     select: {
@@ -152,16 +160,7 @@ const parkingSessionSelect = {
 
 const normalizeLicensePlate = (plate = '') => compactLicensePlate(plate)
 
-const normalizePayment = (payment) => {
-  if (!payment) {
-    return null
-  }
-
-  return {
-    ...payment,
-    amount: Number(payment.amount),
-  }
-}
+const normalizePayment = (payment) => paymentService.normalizePayment(payment)
 
 const normalizeParkingSession = (session) => {
   if (!session) {
@@ -286,10 +285,7 @@ const getParkingSessions = async (currentUser, query = {}) => {
   const where = {}
 
   if (!isStaffRole(currentUser.role)) {
-    where.OR = [
-      { userId: currentUser._id },
-      { vehicle: { ownerId: currentUser._id } },
-    ]
+    where.OR = [{ userId: currentUser._id }, { vehicle: { ownerId: currentUser._id } }]
   }
 
   if (query.status) {
@@ -352,6 +348,28 @@ const calculateParkingFeeForSession = async (session, exitTime) => {
     return pricingPolicyService.calculateParkingFeeFromPolicy(pricingPolicy, session.entryTime, exitTime)
   } catch {
     return calculateParkingFee(session.entryTime, exitTime, session.vehicle?.vehicleType)
+  }
+}
+
+const resolveSessionFee = async (session, targetExitTime = new Date()) => {
+  const applicableMonthlySubscription = await monthlySubscriptionService.findActiveMonthlySubscription(
+    prisma,
+    session.vehicleId,
+    new Date(session.entryTime)
+  )
+
+  if (applicableMonthlySubscription) {
+    return {
+      totalFee: 0,
+      monthlySubscriptionApplied: true,
+      applicableMonthlySubscription: monthlySubscriptionService.normalizeMonthlySubscription(applicableMonthlySubscription),
+    }
+  }
+
+  return {
+    totalFee: await calculateParkingFeeForSession(session, targetExitTime),
+    monthlySubscriptionApplied: false,
+    applicableMonthlySubscription: null,
   }
 }
 
@@ -468,9 +486,7 @@ const checkInParkingByPlate = async (currentUser, payload, file) => {
   const uploadedImage = await uploadEntryImage(file)
 
   return prisma.$transaction(async (tx) => {
-    let vehicle = vehicleId
-      ? await tx.vehicle.findUnique({ where: { id: vehicleId } })
-      : await findVehicleByNormalizedPlate(tx, plate)
+    let vehicle = vehicleId ? await tx.vehicle.findUnique({ where: { id: vehicleId } }) : await findVehicleByNormalizedPlate(tx, plate)
 
     if (vehicle && normalizeLicensePlate(vehicle.licensePlate) !== plate) {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Selected vehicle does not match the detected plate')
@@ -521,6 +537,80 @@ const checkInParkingByPlate = async (currentUser, payload, file) => {
   })
 }
 
+const estimateParkingSessionFee = async (currentUser, parkingSessionId) => {
+  if (!parkingSessionId) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Parking session id is required')
+  }
+
+  const session = await getParkingSessionById(currentUser, parkingSessionId)
+
+  if (session.status === 'COMPLETED') {
+    return {
+      session,
+      totalFee: session.totalFee ?? session.payment?.amount ?? 0,
+      paymentRequired: Boolean((session.totalFee ?? session.payment?.amount ?? 0) > 0),
+      monthlySubscriptionApplied: Boolean((session.totalFee ?? 0) === 0 && session.payment?.amount === 0),
+      applicableMonthlySubscription: null,
+      payment: session.payment,
+    }
+  }
+
+  const resolution = await resolveSessionFee(session, new Date())
+
+  return {
+    session,
+    totalFee: resolution.totalFee,
+    paymentRequired: resolution.totalFee > 0,
+    monthlySubscriptionApplied: resolution.monthlySubscriptionApplied,
+    applicableMonthlySubscription: resolution.applicableMonthlySubscription,
+    payment: session.payment,
+  }
+}
+
+const createCheckoutPaymentLink = async (currentUser, parkingSessionId, payload = {}) => {
+  const session = await getParkingSessionById(currentUser, parkingSessionId)
+
+  if (session.status === 'COMPLETED') {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Completed parking sessions cannot create a payment link')
+  }
+
+  const paymentMethod = validatePaymentMethod(payload.paymentMethod || 'BANKING')
+
+  if (paymentMethod === 'CASH') {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Use CASH only when completing checkout directly')
+  }
+
+  const resolution = await resolveSessionFee(session, new Date())
+
+  if (resolution.totalFee <= 0) {
+    return {
+      session,
+      totalFee: 0,
+      paymentRequired: false,
+      monthlySubscriptionApplied: resolution.monthlySubscriptionApplied,
+      applicableMonthlySubscription: resolution.applicableMonthlySubscription,
+      checkoutUrl: null,
+      qrCode: null,
+      payment: session.payment,
+    }
+  }
+
+  const paymentResult = await paymentService.createCheckoutPaymentLink({
+    session,
+    amount: resolution.totalFee,
+    paymentMethod,
+  })
+
+  return {
+    session,
+    totalFee: resolution.totalFee,
+    paymentRequired: true,
+    monthlySubscriptionApplied: resolution.monthlySubscriptionApplied,
+    applicableMonthlySubscription: resolution.applicableMonthlySubscription,
+    ...paymentResult,
+  }
+}
+
 const checkOutParkingSession = async (currentUser, parkingSessionId, payload, file) => {
   if (!parkingSessionId) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Parking session id is required')
@@ -535,33 +625,69 @@ const checkOutParkingSession = async (currentUser, parkingSessionId, payload, fi
   const paymentMethod = validatePaymentMethod(payload.paymentMethod || 'CASH')
   const uploadedImage = await uploadExitImage(file)
   const exitTime = new Date()
-  const totalFee = await calculateParkingFeeForSession(session, exitTime)
+  const resolution = await resolveSessionFee(session, exitTime)
+
+  let totalFee = resolution.totalFee
+  let paymentUpdate = null
+
+  if (resolution.monthlySubscriptionApplied) {
+    paymentUpdate = {
+      amount: 0,
+      method: paymentMethod,
+      status: 'PAID',
+      paidAt: exitTime,
+      provider: null,
+      orderCode: null,
+      providerPaymentId: null,
+      checkoutUrl: null,
+    }
+  } else if (paymentMethod === 'CASH') {
+    paymentUpdate = {
+      amount: totalFee,
+      method: paymentMethod,
+      status: 'PAID',
+      paidAt: exitTime,
+      provider: null,
+      orderCode: null,
+      providerPaymentId: null,
+      checkoutUrl: null,
+    }
+  } else {
+    const existingPayment = await prisma.payment.findUnique({
+      where: { sessionId: parkingSessionId },
+      select: paymentSelect,
+    })
+
+    if (!existingPayment || existingPayment.status !== 'PAID') {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Online payment must be completed before checkout')
+    }
+
+    totalFee = Number(existingPayment.amount)
+    paymentUpdate = {
+      amount: totalFee,
+      method: existingPayment.method,
+      status: 'PAID',
+      paidAt: existingPayment.paidAt || exitTime,
+    }
+  }
+
   const updateData = {
     ...buildParkingSessionCheckOutData(payload, uploadedImage, totalFee),
     exitTime,
   }
 
   return prisma.$transaction(async (tx) => {
-    const updatedSession = await tx.parkingSession.update({
+    await tx.parkingSession.update({
       where: { id: parkingSessionId },
       data: updateData,
-      select: parkingSessionSelect,
     })
 
     await tx.payment.upsert({
       where: { sessionId: parkingSessionId },
-      update: {
-        amount: totalFee,
-        method: paymentMethod,
-        status: 'PAID',
-        paidAt: exitTime,
-      },
+      update: paymentUpdate,
       create: {
         sessionId: parkingSessionId,
-        amount: totalFee,
-        method: paymentMethod,
-        status: 'PAID',
-        paidAt: exitTime,
+        ...paymentUpdate,
       },
     })
 
@@ -584,6 +710,8 @@ export const parkingSessionService = {
   getParkingSessionById,
   checkInParkingSession,
   checkInParkingByPlate,
+  estimateParkingSessionFee,
+  createCheckoutPaymentLink,
   checkOutParkingSession,
   buildParkingSessionCheckInData,
   buildParkingSessionCheckOutData,

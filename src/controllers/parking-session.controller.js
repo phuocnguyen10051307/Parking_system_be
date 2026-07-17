@@ -40,6 +40,28 @@ const checkInParkingByPlate = asyncHandler(async (req, res) => {
     data: session,
   })
 })
+
+const estimateParkingSessionFee = asyncHandler(async (req, res) => {
+  const parkingSessionId = req.params.id || req.body.id
+  const summary = await parkingSessionService.estimateParkingSessionFee(req.user, parkingSessionId)
+
+  res.status(StatusCodes.OK).json({
+    success: true,
+    data: summary,
+  })
+})
+
+const createCheckoutPaymentLink = asyncHandler(async (req, res) => {
+  const parkingSessionId = req.params.id || req.body.id
+  const result = await parkingSessionService.createCheckoutPaymentLink(req.user, parkingSessionId, req.body)
+
+  res.status(StatusCodes.OK).json({
+    success: true,
+    message: 'Checkout payment link created successfully',
+    data: result,
+  })
+})
+
 const checkOutParkingSession = asyncHandler(async (req, res) => {
   const parkingSessionId = req.params.id || req.body.id
   const session = await parkingSessionService.checkOutParkingSession(req.user, parkingSessionId, req.body, req.file)
@@ -56,5 +78,7 @@ export const parkingSessionController = {
   getParkingSessionById,
   checkInParkingSession,
   checkInParkingByPlate,
+  estimateParkingSessionFee,
+  createCheckoutPaymentLink,
   checkOutParkingSession,
 }
