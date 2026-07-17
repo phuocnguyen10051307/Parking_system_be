@@ -2,6 +2,7 @@ import { StatusCodes } from 'http-status-codes'
 
 import { prisma } from '../config/prisma.js'
 import ApiError from '../utils/ApiError.js'
+import { parseVietnamDateTime } from '../utils/vietnam-time.js'
 
 const VEHICLE_TYPES = ['MOTORBIKE', 'CAR', 'BICYCLE', 'ELECTRIC_BIKE']
 const SLOT_STATUSES = ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'MAINTENANCE', 'BLOCKED']
@@ -86,8 +87,8 @@ const parseReservationWindow = (startTime, endTime) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'startTime and endTime must be provided together')
   }
 
-  const start = new Date(startTime)
-  const end = new Date(endTime)
+  const start = parseVietnamDateTime(startTime)
+  const end = parseVietnamDateTime(endTime)
 
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'startTime and endTime must be valid dates')

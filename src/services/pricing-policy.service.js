@@ -2,6 +2,7 @@ import { StatusCodes } from 'http-status-codes'
 
 import { prisma } from '../config/prisma.js'
 import ApiError from '../utils/ApiError.js'
+import { addVietnamDays, parseVietnamDateTime, setVietnamMinutes, startOfVietnamDay } from '../utils/vietnam-time.js'
 
 const MANAGEMENT_ROLES = ['ADMIN', 'MANAGER']
 const VEHICLE_TYPES = ['MOTORBIKE', 'CAR', 'BICYCLE', 'ELECTRIC_BIKE']
@@ -50,8 +51,6 @@ const pricingPolicySelect = {
 }
 
 const toNumber = (value) => Number(value)
-const addMinutes = (date, minutes) => new Date(date.getTime() + minutes * 60000)
-
 const getSegmentMinutes = (rangeStart, rangeEnd, segmentStart, segmentEnd) => {
   const start = Math.max(rangeStart.getTime(), segmentStart.getTime())
   const end = Math.min(rangeEnd.getTime(), segmentEnd.getTime())
@@ -71,28 +70,18 @@ const normalizePolicy = (policy) => ({
 })
 
 const getPolicySegmentWindows = (policy, currentDay) => {
-  const daytimeStart = new Date(currentDay)
-  daytimeStart.setHours(0, 0, 0, 0)
-  daytimeStart.setMinutes(policy.daytimeStartMinutes)
+  const daytimeStart = setVietnamMinutes(currentDay, policy.daytimeStartMinutes)
 
-  const daytimeEnd = new Date(currentDay)
-  daytimeEnd.setHours(0, 0, 0, 0)
-  daytimeEnd.setMinutes(policy.daytimeEndMinutes + 1)
+  const daytimeEnd = setVietnamMinutes(currentDay, policy.daytimeEndMinutes + 1)
 
-  const eveningStart = new Date(currentDay)
-  eveningStart.setHours(0, 0, 0, 0)
-  eveningStart.setMinutes(policy.eveningStartMinutes)
+  const eveningStart = setVietnamMinutes(currentDay, policy.eveningStartMinutes)
 
-  const nextDay = addMinutes(new Date(currentDay), 24 * 60)
-  const eveningEnd = new Date(nextDay)
-  eveningEnd.setHours(0, 0, 0, 0)
+  const nextDay = addVietnamDays(currentDay, 1)
+  const eveningEnd = nextDay
 
-  const overnightStart = new Date(currentDay)
-  overnightStart.setHours(0, 0, 0, 0)
+  const overnightStart = currentDay
 
-  const overnightEnd = new Date(currentDay)
-  overnightEnd.setHours(0, 0, 0, 0)
-  overnightEnd.setMinutes(policy.daytimeStartMinutes)
+  const overnightEnd = setVietnamMinutes(currentDay, policy.daytimeStartMinutes)
 
   return {
     daytimeStart,
@@ -267,8 +256,8 @@ const getActivePricingPolicy = async (vehicleType = 'CAR') => {
 
 const calculateParkingFeeFromPolicy = (policy, entryTime, exitTime) => {
   const normalizedPolicy = normalizePolicy(policy)
-  const normalizedEntryTime = new Date(entryTime)
-  const normalizedExitTime = new Date(exitTime)
+  const normalizedEntryTime = parseVietnamDateTime(entryTime)
+  const normalizedExitTime = parseVietnamDateTime(exitTime)
   const parkedMinutes = Math.max(0, Math.ceil((normalizedExitTime.getTime() - normalizedEntryTime.getTime()) / 60000))
 
   if (parkedMinutes <= normalizedPolicy.gracePeriodMinutes) {
@@ -276,8 +265,7 @@ const calculateParkingFeeFromPolicy = (policy, entryTime, exitTime) => {
   }
 
   let total = 0
-  const currentDay = new Date(normalizedEntryTime)
-  currentDay.setHours(0, 0, 0, 0)
+  const currentDay = startOfVietnamDay(normalizedEntryTime)
 
   while (currentDay < normalizedExitTime) {
     const { daytimeStart, daytimeEnd, eveningStart, eveningEnd, overnightStart, overnightEnd } =
@@ -299,7 +287,7 @@ const calculateParkingFeeFromPolicy = (policy, entryTime, exitTime) => {
       total += Math.ceil(eveningMinutes / normalizedPolicy.blockDurationMinutes) * normalizedPolicy.eveningBlockFee
     }
 
-    currentDay.setDate(currentDay.getDate() + 1)
+    currentDay.setTime(addVietnamDays(currentDay, 1).getTime())
   }
 
   return total

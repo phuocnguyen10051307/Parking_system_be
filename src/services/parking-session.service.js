@@ -5,6 +5,7 @@ import { cloudinary } from '../config/cloudinary.js'
 import { prisma } from '../config/prisma.js'
 import ApiError from '../utils/ApiError.js'
 import { compactLicensePlate, formatLicensePlate } from '../utils/license-plate.js'
+import { addVietnamDays, parseVietnamDateTime, setVietnamMinutes, startOfVietnamDay } from '../utils/vietnam-time.js'
 import { paymentService } from './payment.service.js'
 import { pricingPolicyService } from './pricing-policy.service.js'
 import { cleanupExpiredReservations, findReservationForCheckIn, removeReservationAfterCheckIn } from './reservation.service.js'
@@ -24,8 +25,6 @@ const CAR_EVENING_BLOCK_FEE = 20000
 const CAR_OVERNIGHT_FEE = 100000
 const TWO_HOURS_IN_MINUTES = 120
 
-const addMinutes = (date, minutes) => new Date(date.getTime() + minutes * 60000)
-
 const getSegmentMinutes = (rangeStart, rangeEnd, segmentStart, segmentEnd) => {
   const start = Math.max(rangeStart.getTime(), segmentStart.getTime())
   const end = Math.min(rangeEnd.getTime(), segmentEnd.getTime())
@@ -35,23 +34,18 @@ const getSegmentMinutes = (rangeStart, rangeEnd, segmentStart, segmentEnd) => {
 
 const calculateCarParkingFee = (entryTime, exitTime) => {
   let total = 0
-  const currentDay = new Date(entryTime)
-  currentDay.setHours(0, 0, 0, 0)
+  const currentDay = startOfVietnamDay(entryTime)
 
   while (currentDay < exitTime) {
-    const nextDay = addMinutes(currentDay, 24 * 60)
+    const nextDay = addVietnamDays(currentDay, 1)
 
     const overnightStart = currentDay
-    const overnightEnd = new Date(currentDay)
-    overnightEnd.setHours(6, 0, 0, 0)
+    const overnightEnd = setVietnamMinutes(currentDay, 6 * 60)
 
-    const daytimeStart = new Date(currentDay)
-    daytimeStart.setHours(6, 0, 0, 0)
-    const daytimeEnd = new Date(currentDay)
-    daytimeEnd.setHours(17, 30, 0, 0)
+    const daytimeStart = setVietnamMinutes(currentDay, 6 * 60)
+    const daytimeEnd = setVietnamMinutes(currentDay, 17 * 60 + 30)
 
-    const eveningStart = new Date(currentDay)
-    eveningStart.setHours(18, 0, 0, 0)
+    const eveningStart = setVietnamMinutes(currentDay, 18 * 60)
     const eveningEnd = nextDay
 
     const overnightMinutes = getSegmentMinutes(entryTime, exitTime, overnightStart, overnightEnd)
@@ -70,7 +64,7 @@ const calculateCarParkingFee = (entryTime, exitTime) => {
       total += Math.ceil(eveningMinutes / TWO_HOURS_IN_MINUTES) * CAR_EVENING_BLOCK_FEE
     }
 
-    currentDay.setDate(currentDay.getDate() + 1)
+    currentDay.setTime(nextDay.getTime())
   }
 
   return total
@@ -229,8 +223,8 @@ const uploadEntryImage = (file) => uploadVehicleImage(file, 'parking/check-ins')
 const uploadExitImage = (file) => uploadVehicleImage(file, 'parking/check-outs')
 
 export const calculateParkingFee = (entryTime, exitTime, vehicleType = 'CAR') => {
-  const normalizedEntryTime = new Date(entryTime)
-  const normalizedExitTime = new Date(exitTime)
+  const normalizedEntryTime = parseVietnamDateTime(entryTime)
+  const normalizedExitTime = parseVietnamDateTime(exitTime)
   const parkedMinutes = Math.max(0, Math.ceil((normalizedExitTime.getTime() - normalizedEntryTime.getTime()) / 60000))
 
   if (vehicleType === 'CAR') {

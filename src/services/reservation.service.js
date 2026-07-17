@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes'
 import { prisma } from '../config/prisma.js'
 import ApiError from '../utils/ApiError.js'
 import { formatLicensePlate } from '../utils/license-plate.js'
+import { parseVietnamDateTime } from '../utils/vietnam-time.js'
 
 const STAFF_ROLES = ['ADMIN', 'MANAGER', 'STAFF']
 const ACTIVE_RESERVATION_STATUSES = ['PENDING', 'CONFIRMED']
@@ -81,8 +82,8 @@ export const buildReservationCreateData = (payload, currentUserId) => {
     userId: currentUserId,
     vehicleId,
     slotId,
-    startTime: new Date(startTime),
-    endTime: new Date(endTime),
+    startTime: parseVietnamDateTime(startTime),
+    endTime: parseVietnamDateTime(endTime),
     status: 'PENDING',
   }
 }
@@ -95,7 +96,7 @@ export const getReservationBookingWindow = (baseTime = new Date()) => ({
 export const getReservationCheckInWindow = (reservationOrStartTime) => {
   const startTime = reservationOrStartTime instanceof Date
     ? reservationOrStartTime
-    : new Date(reservationOrStartTime?.startTime ?? reservationOrStartTime)
+    : parseVietnamDateTime(reservationOrStartTime?.startTime ?? reservationOrStartTime)
 
   return {
     opensAt: addHours(startTime, -EARLY_CHECK_IN_WINDOW_HOURS),
@@ -239,8 +240,8 @@ const createReservation = async (currentUser, payload) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'vehicleId, slotId, startTime and endTime are required')
   }
 
-  const start = new Date(startTime)
-  const end = new Date(endTime)
+  const start = parseVietnamDateTime(startTime)
+  const end = parseVietnamDateTime(endTime)
   const now = new Date()
   const { maxEndTime } = getReservationBookingWindow(now)
 
